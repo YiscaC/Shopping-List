@@ -14,7 +14,7 @@ public class PartnerSelectionActivity extends AppCompatActivity {
     }
 
     public void onPartnerClick(View view) {
-        // ניתן לזהות את השותף לפי ה-ID של הרשומה
+        // ניתן לזהות את השותף לפי ה-ID של הרששומה
         String selectedPartner = "";
 
         if (view.getId() == R.id.imagePartner1 || view.getId() == R.id.namePartner1) {
