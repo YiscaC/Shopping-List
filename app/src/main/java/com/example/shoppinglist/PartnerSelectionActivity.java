@@ -17,22 +17,16 @@ public class PartnerSelectionActivity extends AppCompatActivity {
         // ניתן לזהות את השותף לפי ה-ID של הרשומה
         String selectedPartner = "";
 
-        switch (view.getId()) {
-            case R.id.imagePartner1:
-            case R.id.namePartner1:
-                selectedPartner = "Alice";
-                break;
-
-            case R.id.imagePartner2:
-            case R.id.namePartner2:
-                selectedPartner = "Bob";
-                break;
-
-            // הוסיפי טיפול בשותפים נוספים כאן
+        if (view.getId() == R.id.imagePartner1 || view.getId() == R.id.namePartner1) {
+            selectedPartner = "Alice";
+        } else if (view.getId() == R.id.imagePartner2 || view.getId() == R.id.namePartner2) {
+            selectedPartner = "Bob";
         }
+        // הוסיפי טיפול בשותפים נוספים כאן
 
         // הצגת הודעה עם הבחירה
         Toast.makeText(this, "בחרת את: " + selectedPartner, Toast.LENGTH_SHORT).show();
     }
+
 }
 
