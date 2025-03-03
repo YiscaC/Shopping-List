@@ -1,44 +1,32 @@
 package com.example.shoppinglist
 
 import android.os.Bundle
+import androidx.appcompat.widget.Toolbar
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Toast
-import android.content.Intent;
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupActionBarWithNavController
 
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-        val idNumber = findViewById<EditText>(R.id.idNumber)
-        val password = findViewById<EditText>(R.id.password)
-        val loginButton = findViewById<Button>(R.id.loginButton)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
-        loginButton.setOnClickListener {
-            val id = idNumber.text.toString().trim()
-            val pass = password.text.toString().trim()
+        // חיבור ה-Navigation Component
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
 
-            if (id.isEmpty() || pass.isEmpty()) {
-                Toast.makeText(this, "יש למלא את כל השדות", Toast.LENGTH_SHORT).show()
-            } else {
-                // כאן אפשר להוסיף לוגיקה לבדוק את פרטי המשתמש
-                Toast.makeText(this, "נכנסת בהצלחה!", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this, PartnerSelectionActivity::class.java)
-                startActivity(intent);
-            }
-
-            }
-        }
+        setupActionBarWithNavController(navController)
     }
 
+    // כפתור חזור (אם יש צורך)
+    override fun onSupportNavigateUp(): Boolean {
+        val navController = findNavController(R.id.nav_host_fragment)
+        return navController.navigateUp() || super.onSupportNavigateUp()
+    }
+}

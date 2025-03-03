@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:startDestination="@id/loginFragment">
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.shoppinglist.LoginFragment"
+        android:label="Login">
+        <action
+            android:id="@+id/action_loginFragment_to_partnerFragment"
+            app:destination="@id/partnerFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/partnerFragment"
+        android:name="com.example.shoppinglist.PartnerFragment"
+        android:label="Partner">
+        <action
+            android:id="@+id/action_partnerFragment_to_shoppingListFragment"
+            app:destination="@id/shoppingListFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/shoppingListFragment"
+        android:name="com.example.shoppinglist.ShoppingListFragment"
+        android:label="ShoppingList" />
+
+</navigation>
