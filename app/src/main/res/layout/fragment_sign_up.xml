@@ -17,12 +17,12 @@
         app:boxStrokeColor="@color/black">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etEmail"
+            android:id="@+id/etEmailSignUp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Email"
             android:inputType="textEmailAddress"
-            android:textSize="16sp" />
+            android:textSize="16sp"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- שדה סיסמה עם אייקון -->
@@ -35,7 +35,7 @@
         android:layout_marginTop="16dp">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etPassword"
+            android:id="@+id/etPasswordSignUp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Password"
@@ -43,23 +43,41 @@
             android:textSize="16sp"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- כפתור כניסה -->
+    <!-- שדה אישור סיסמה עם אייקון -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:startIconDrawable="@drawable/ic_lock"
+        app:endIconMode="password_toggle"
+        app:boxStrokeColor="@color/black"
+        android:layout_marginTop="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etConfirmPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Confirm Password"
+            android:inputType="textPassword"
+            android:textSize="16sp"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- כפתור הרשמה -->
     <Button
-        android:id="@+id/btnLogin"
+        android:id="@+id/btnSignUp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:backgroundTint="@color/green"
-        android:text="Login"
+        android:text="Sign Up"
         android:textColor="@color/white"
         android:textSize="16sp"/>
 
-    <!-- טקסט הרשמה עם חלק לחיץ -->
+    <!-- טקסט מעבר לכניסה -->
     <TextView
-        android:id="@+id/tvSignUp"
+        android:id="@+id/tvLogin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Don't have an account? Sign Up"
+        android:text="Already have an account? Login"
         android:textColor="@color/black"
         android:textSize="14sp"
         android:layout_marginTop="12dp"/>

@@ -7,6 +7,17 @@
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content" />
+
+<!--    <Button-->
+<!--        android:id="@+id/btnLogout"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginTop="16dp"-->
+<!--        android:backgroundTint="@color/green"-->
+<!--        android:text="Logout"-->
+<!--        android:textColor="@color/white"-->
+<!--        android:textSize="16sp"/>-->
+
 </LinearLayout>
 

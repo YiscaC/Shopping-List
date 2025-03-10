@@ -10,6 +10,22 @@
         <action
             android:id="@+id/action_loginFragment_to_partnerFragment"
             app:destination="@id/partnerFragment"/>
+        <action
+            android:id="@+id/action_loginFragment_to_signUpFragment"
+            app:destination="@id/signUpFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/signUpFragment"
+        android:name="com.example.shoppinglist.SignUpFragment"
+        android:label="Sign Up">
+        <action
+            android:id="@+id/action_signUpFragment_to_partnerFragment"
+            app:destination="@id/partnerFragment"/>
+        <action
+            android:id="@+id/action_signUpFragment_to_loginFragment"
+            app:destination="@id/loginFragment"/>
+
     </fragment>
 
     <fragment
