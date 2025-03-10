@@ -1,18 +1,16 @@
 package com.example.shoppinglist
 
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.ListView
+import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-
+import com.google.firebase.auth.FirebaseAuth
 
 class PartnerFragment : Fragment() {
+    private lateinit var auth: FirebaseAuth
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -20,14 +18,17 @@ class PartnerFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_partner, container, false)
 
-        val listView: ListView = view.findViewById(R.id.listView)
-        val users = listOf("John", "Emma", "Alex", "Paul", "Sophia")
+        auth = FirebaseAuth.getInstance()
 
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, users)
-        listView.adapter = adapter
+        val logoutButton = view.findViewById<Button>(R.id.btnLogout)
+        logoutButton.setOnClickListener {
+            // יוצא מהמשתמש
+            auth.signOut()
 
-        listView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            findNavController().navigate(R.id.action_partnerFragment_to_shoppingListFragment)
+            // ננקה את ה-Back Stack ונעבור לדף הלוגין
+            val navController = findNavController()
+            navController.popBackStack(R.id.loginFragment, false) // מנקה את ה-back stack עד לעמוד הלוגין
+            navController.navigate(R.id.loginFragment) // נעבור לדף הלוגין
         }
 
         return view

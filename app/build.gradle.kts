@@ -56,6 +56,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx") // Firestore
     implementation("com.google.firebase:firebase-storage-ktx") // Storage (לשמירת תמונות, אם צריך)
 
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

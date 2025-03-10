@@ -35,6 +35,9 @@
         <action
             android:id="@+id/action_partnerFragment_to_shoppingListFragment"
             app:destination="@id/shoppingListFragment"/>
+        <action
+            android:id="@+id/action_partnerFragment_to_loginFragment"
+            app:destination="@id/shoppingListFragment"/>
     </fragment>
 
     <fragment
