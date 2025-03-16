@@ -32,18 +32,20 @@ class SignUpFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_sign_up, container, false)
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
 
+        val usernameInput = view.findViewById<EditText>(R.id.etUsername)
         val emailInput = view.findViewById<EditText>(R.id.etEmailSignUp)
         val passwordInput = view.findViewById<EditText>(R.id.etPasswordSignUp)
         val confirmPasswordInput = view.findViewById<EditText>(R.id.etConfirmPassword)
         val signUpButton = view.findViewById<Button>(R.id.btnSignUp)
         val loginTextView = view.findViewById<TextView>(R.id.tvLogin)
 
+        // טקסט מעבר לדף התחברות
         val spannable = SpannableString("Already have an account? Login")
         val clickableSpan = object : ClickableSpan() {
             override fun onClick(widget: View) {
@@ -60,15 +62,16 @@ class SignUpFragment : Fragment() {
         loginTextView.movementMethod = LinkMovementMethod.getInstance()
 
         signUpButton.setOnClickListener {
+            val username = usernameInput.text.toString().trim()
             val email = emailInput.text.toString().trim()
             val password = passwordInput.text.toString().trim()
             val confirmPassword = confirmPasswordInput.text.toString().trim()
 
-            if (email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
+            if (username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
                 if (password != confirmPassword) {
                     showAlert("Password Mismatch", "Passwords do not match. Please try again.")
                 } else if (isInternetAvailable()) {
-                    register(email, password)
+                    register(username, email, password)
                 } else {
                     showAlert("No Internet", "No internet connection. Try again later.")
                 }
@@ -80,10 +83,13 @@ class SignUpFragment : Fragment() {
         return view
     }
 
-    private fun register(email: String, password: String) {
+    private fun register(username: String, email: String, password: String) {
         auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
-                saveUserToFirestore(email)
+            .addOnSuccessListener { result ->
+                val userId = result.user?.uid
+                if (userId != null) {
+                    saveUserToFirestore(userId, username, email)
+                }
             }
             .addOnFailureListener { e ->
                 when {
@@ -96,9 +102,12 @@ class SignUpFragment : Fragment() {
             }
     }
 
-    private fun saveUserToFirestore(email: String) {
-        val user = hashMapOf("email" to email)
-        db.collection("users").document(email).set(user)
+    private fun saveUserToFirestore(userId: String, username: String, email: String) {
+        val user = hashMapOf(
+            "username" to username,
+            "email" to email
+        )
+        db.collection("users").document(userId).set(user)
             .addOnSuccessListener {
                 Log.d("Firestore", "User added successfully")
                 Toast.makeText(requireContext(), "User registered successfully", Toast.LENGTH_SHORT).show()

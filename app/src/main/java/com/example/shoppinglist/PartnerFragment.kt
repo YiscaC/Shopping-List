@@ -15,20 +15,30 @@ class PartnerFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_partner, container, false)
 
         auth = FirebaseAuth.getInstance()
 
+        // כפתור התנתקות
         val logoutButton = view.findViewById<Button>(R.id.btnLogout)
         logoutButton.setOnClickListener {
-            // יוצא מהמשתמש
             auth.signOut()
-
-            // ננקה את ה-Back Stack ונעבור לדף הלוגין
             val navController = findNavController()
-            navController.popBackStack(R.id.loginFragment, false) // מנקה את ה-back stack עד לעמוד הלוגין
-            navController.navigate(R.id.loginFragment) // נעבור לדף הלוגין
+            navController.popBackStack(R.id.loginFragment, false)
+            navController.navigate(R.id.loginFragment)
+        }
+
+        // כפתור מעבר לפרופיל
+        val profileButton = view.findViewById<Button>(R.id.btnProfile)
+        profileButton.setOnClickListener {
+            findNavController().navigate(R.id.action_partnerFragment_to_profileFragment)
+        }
+
+        // ✅ כפתור מעבר לרשימת הקניות
+        val shoppingListButton = view.findViewById<Button>(R.id.btnGoToShoppingList)
+        shoppingListButton.setOnClickListener {
+            findNavController().navigate(R.id.action_partnerFragment_to_shoppingListFragment)
         }
 
         return view

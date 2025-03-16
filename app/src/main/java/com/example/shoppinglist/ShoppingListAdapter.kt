@@ -1,47 +1,41 @@
 package com.example.shoppinglist
+
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-//import com.example.shoppinglist.R
+import com.example.shoppinglist.models.ShoppingList
 
 class ShoppingListAdapter(
-    private val items: List<ShoppingItem> // רשימת הפריטים להצגה
-) : RecyclerView.Adapter<ShoppingListAdapter.ShoppingViewHolder>() {
+    private val shoppingLists: List<ShoppingList>,
+    private val onItemClick: (ShoppingList) -> Unit
+) : RecyclerView.Adapter<ShoppingListAdapter.ShoppingListViewHolder>() {
 
-    // ViewHolder מייצג פריט בודד ב-RecyclerView
-    inner class ShoppingViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val name: TextView = view.findViewById(R.id.itemNameTextView)
-        val quantity: TextView = view.findViewById(R.id.itemQuantityTextView)
-        val purchased: TextView = view.findViewById(R.id.itemPurchasedTextView)
-        val image: ImageView = view.findViewById(R.id.itemImageView)
-    }
+    inner class ShoppingListViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val name: TextView = view.findViewById(R.id.listName) // ✅ לוודא שהשם תואם ל-XML
 
-    // יוצרים ViewHolder חדש (לכל פריט)
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShoppingViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_shopping, parent, false)
-        return ShoppingViewHolder(view)
-    }
-
-    // ממלאים את המידע בפריט (binding)
-    override fun onBindViewHolder(holder: ShoppingViewHolder, position: Int) {
-        val item = items[position] // הפריט הנוכחי
-        holder.name.text = item.name
-        holder.quantity.text = "Quantity: ${item.quantity}"
-        holder.purchased.text = if (item.purchased) "Purchased" else "Not Purchased"
-
-        // טיפול בתמונה (באמצעות Glide או Placeholder)
-        if (item.imageUrl != null) {
-            // דוגמה לשימוש ב-Glide:
-            // Glide.with(holder.image.context).load(item.imageUrl).into(holder.image)
-        } else {
-            holder.image.setImageResource(R.drawable.placeholder_image)
+        init {
+            view.setOnClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    onItemClick(shoppingLists[position]) // ✅ מעביר את האובייקט בלחיצה
+                }
+            }
         }
     }
 
-    // מספר הפריטים ברשימה
-    override fun getItemCount(): Int = items.size
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShoppingListViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_shopping_list, parent, false)
+        return ShoppingListViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ShoppingListViewHolder, position: Int) {
+        val shoppingList = shoppingLists[position]
+        holder.name.text = shoppingList.name
+    }
+
+    override fun getItemCount(): Int = shoppingLists.size
 }
+

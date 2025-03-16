@@ -1,59 +1,115 @@
 package com.example.shoppinglist
 
+import android.app.AlertDialog
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.Toast
+import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.shoppinglist.databinding.FragmentShoppingListBinding
+import com.example.shoppinglist.models.ShoppingList
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [ShoppingListFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class ShoppingListFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
+    private lateinit var binding: FragmentShoppingListBinding
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val db: DatabaseReference by lazy { FirebaseDatabase.getInstance().reference.child("shoppingLists") }
+    private val shoppingLists = mutableListOf<ShoppingList>()
+    private lateinit var adapter: ShoppingListAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_shopping_list, container, false)
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentShoppingListBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment ShoppingListFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            ShoppingListFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        adapter = ShoppingListAdapter(shoppingLists) { selectedList ->
+            val action = ShoppingListFragmentDirections
+                .actionShoppingListFragmentToShoppingItemsFragment(
+                    listId = selectedList.id,
+                    listName = selectedList.name
+                )
+            findNavController().navigate(action) // ✅ נווט למסך הפריטים
+        }
+
+        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.adapter = adapter
+
+        binding.btnAddList.setOnClickListener {
+            showAddListDialog()
+        }
+
+        loadShoppingLists()
+    }
+
+    private fun showAddListDialog() {
+        val dialog = AlertDialog.Builder(requireContext())
+        dialog.setTitle("Create Shopping List")
+
+        val input = EditText(requireContext())
+        input.hint = "Enter list name"
+        dialog.setView(input)
+
+        dialog.setPositiveButton("Create") { _, _ ->
+            val listName = input.text.toString().trim()
+            if (listName.isNotEmpty()) {
+                createShoppingList(listName)
+            } else {
+                Toast.makeText(requireContext(), "List name cannot be empty", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        dialog.setNegativeButton("Cancel", null)
+        dialog.show()
+    }
+
+    private fun createShoppingList(listName: String) {
+        val user = auth.currentUser ?: return
+        val listId = db.push().key ?: return
+
+        val newList = ShoppingList(
+            id = listId,
+            name = listName,
+            owner = user.uid,
+            participants = mapOf(user.uid to true)
+        )
+
+        db.child(listId).setValue(newList)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "List created!", Toast.LENGTH_SHORT).show()
+                loadShoppingLists()
+            }
+            .addOnFailureListener {
+                Toast.makeText(requireContext(), "Failed to create list.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun loadShoppingLists() {
+        val user = auth.currentUser ?: return
+        db.orderByChild("participants/${user.uid}").equalTo(true)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    shoppingLists.clear()
+                    for (listSnapshot in snapshot.children) {
+                        val list = listSnapshot.getValue(ShoppingList::class.java)
+                        list?.let { shoppingLists.add(it) }
+                    }
+                    adapter.notifyDataSetChanged()
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Toast.makeText(requireContext(), "Failed to load lists.", Toast.LENGTH_SHORT).show()
+                }
+            })
     }
 }

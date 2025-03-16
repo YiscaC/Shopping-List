@@ -9,12 +9,29 @@
     android:padding="24dp"
     android:background="@color/white">
 
+    <!-- שדה שם משתמש עם אייקון -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:startIconDrawable="@drawable/ic_person"
+        app:boxStrokeColor="@color/black">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etUsername"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Username"
+            android:inputType="textPersonName"
+            android:textSize="16sp"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
     <!-- שדה אימייל עם אייקון -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:startIconDrawable="@drawable/ic_email"
-        app:boxStrokeColor="@color/black">
+        app:boxStrokeColor="@color/black"
+        android:layout_marginTop="16dp">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etEmailSignUp"
