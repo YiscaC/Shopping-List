@@ -108,6 +108,7 @@
             android:src="@drawable/ic_camera"
             android:scaleType="fitCenter"
             android:padding="4dp"/>
+
     </LinearLayout>
 
     <!-- תמונה (מוסתרת כברירת מחדל) -->

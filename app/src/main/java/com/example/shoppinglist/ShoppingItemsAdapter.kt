@@ -68,6 +68,22 @@ class ShoppingItemsAdapter(
             onQuantityChanged(item, newQuantity)
             holder.quantityText.setText(newQuantity.toString())
         }
+
+        // ✅ שליחת תגובה
+        holder.sendCommentButton.setOnClickListener {
+            val commentText = holder.commentInput.text.toString().trim()
+            if (commentText.isNotEmpty()) {
+                onCommentAdded(item, commentText)
+                holder.commentInput.setText("") // ניקוי השדה לאחר שליחה
+            } else {
+                Toast.makeText(holder.itemView.context, "לא ניתן לשלוח הודעה ריקה", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // ✅ פתיחת גלריה להוספת תמונה
+        holder.addImageButton.setOnClickListener {
+            onImageAdded(item)
+        }
     }
 
     override fun getItemCount(): Int = items.size
