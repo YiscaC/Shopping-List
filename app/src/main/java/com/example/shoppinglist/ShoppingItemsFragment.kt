@@ -34,13 +34,23 @@ class ShoppingItemsFragment : Fragment() {
 
         binding.txtListName.text = args.listName
 
-        adapter = ShoppingItemsAdapter(itemsList,
+        adapter = ShoppingItemsAdapter(
+            itemsList,
             onItemClick = { selectedItem ->
                 selectedItem.expanded = !selectedItem.expanded
                 adapter.notifyDataSetChanged()
             },
             onPurchasedChanged = { selectedItem, isChecked ->
                 updateItemPurchased(selectedItem, isChecked)
+            },
+            onQuantityChanged = { selectedItem, newQuantity ->
+                updateItemQuantity(selectedItem, newQuantity)
+            },
+            onCommentAdded = { selectedItem, comment ->
+                addCommentToItem(selectedItem, comment)
+            },
+            onImageAdded = { selectedItem ->
+                uploadImageForItem(selectedItem)
             }
         )
 
@@ -48,7 +58,7 @@ class ShoppingItemsFragment : Fragment() {
         binding.recyclerView.adapter = adapter
 
         binding.btnAddItem.setOnClickListener {
-            showAddItemDialog()
+            showAddItemDialog() // ✅ כפתור "Add Item" יפתח דיאלוג
         }
 
         loadShoppingItems()
@@ -77,6 +87,20 @@ class ShoppingItemsFragment : Fragment() {
             .child("purchased").setValue(isChecked)
     }
 
+    private fun updateItemQuantity(item: ShoppingItem, newQuantity: Int) {
+        db.child("shoppingLists").child(args.listId).child("items").child(item.id)
+            .child("quantity").setValue(newQuantity)
+    }
+
+    private fun addCommentToItem(item: ShoppingItem, comment: String) {
+        db.child("shoppingLists").child(args.listId).child("items").child(item.id)
+            .child("comments").push().setValue(comment)
+    }
+
+    private fun uploadImageForItem(item: ShoppingItem) {
+        // כאן אפשר להוסיף לוגיקה לפתיחת גלריה ולשמור את הקובץ ב-Firebase Storage
+    }
+
     // ✅ דיאלוג להוספת פריט חדש
     private fun showAddItemDialog() {
         val dialog = AlertDialog.Builder(requireContext())
@@ -99,7 +123,7 @@ class ShoppingItemsFragment : Fragment() {
         dialog.show()
     }
 
-    // ✅ הוספת הפריט ל-Firebase
+    // ✅ הוספת פריט חדש ל-Firebase
     private fun addItemToFirebase(itemName: String) {
         val newItemId = db.child("shoppingLists").child(args.listId).child("items").push().key ?: return
 
