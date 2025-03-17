@@ -1,21 +1,21 @@
-package com.example.shoppinglist
+package com.example.shoppinglist.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
-import com.example.shoppinglist.models.ShoppingItem
+import com.example.shoppinglist.R
+import com.example.shoppinglist.data.local.models.ShoppingItem
 
 class ShoppingItemsAdapter(
-    private val items: List<ShoppingItem>,
+    private var items: List<ShoppingItem>,
     private val onItemClick: (ShoppingItem) -> Unit,
     private val onPurchasedChanged: (ShoppingItem, Boolean) -> Unit,
     private val onQuantityChanged: (ShoppingItem, Int) -> Unit,
     private val onCommentAdded: (ShoppingItem, String) -> Unit,
     private val onImageAdded: (ShoppingItem) -> Unit,
-    private val onGallerySelected: (ShoppingItem) -> Unit // ✅ בחירת תמונה מהגלריה
-
+    private val onGallerySelected: (ShoppingItem) -> Unit
 ) : RecyclerView.Adapter<ShoppingItemsAdapter.ShoppingItemViewHolder>() {
 
     inner class ShoppingItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -29,7 +29,7 @@ class ShoppingItemsAdapter(
         val commentInput: EditText = view.findViewById(R.id.itemComment)
         val sendCommentButton: ImageButton = view.findViewById(R.id.btnSendComment)
         val addImageButton: ImageButton = view.findViewById(R.id.btnAddImage)
-        val selectFromGalleryButton: ImageButton = view.findViewById(R.id.btnSelectFromGallery) // ✅ כפתור חדש
+        val selectFromGalleryButton: ImageButton = view.findViewById(R.id.btnSelectFromGallery)
         val itemImage: ImageView = view.findViewById(R.id.itemImage)
     }
 
@@ -47,13 +47,13 @@ class ShoppingItemsAdapter(
         holder.checkbox.isChecked = item.purchased
         holder.quantityText.setText(item.quantity.toString())
 
-        // ✅ לחיצה על שם המוצר -> הצגת אזורי כמות והערות
+        // ✅ פתיחת אזורי כמות, הערות ותמונה בעת לחיצה על הפריט
         holder.name.setOnClickListener {
             item.expanded = !item.expanded
             holder.quantityLayout.visibility = if (item.expanded) View.VISIBLE else View.GONE
             holder.commentsSection.visibility = if (item.expanded) View.VISIBLE else View.GONE
             holder.itemImage.visibility = if (!item.imageUrl.isNullOrEmpty() && item.expanded) View.VISIBLE else View.GONE
-            notifyDataSetChanged()
+            notifyItemChanged(position)
         }
 
         // ✅ עדכון אם פריט נקנה
@@ -79,7 +79,7 @@ class ShoppingItemsAdapter(
             val commentText = holder.commentInput.text.toString().trim()
             if (commentText.isNotEmpty()) {
                 onCommentAdded(item, commentText)
-                holder.commentInput.setText("") // ניקוי השדה לאחר שליחה
+                holder.commentInput.setText("")
             } else {
                 Toast.makeText(holder.itemView.context, "לא ניתן לשלוח הודעה ריקה", Toast.LENGTH_SHORT).show()
             }
@@ -98,7 +98,7 @@ class ShoppingItemsAdapter(
         // ✅ הצגת תמונה אם קיימת
         if (!item.imageUrl.isNullOrEmpty()) {
             holder.itemImage.visibility = View.VISIBLE
-            // שימוש ב-Glide או Picasso כדי להציג תמונה
+            // אפשר להשתמש ב-Glide או Picasso כדי לטעון תמונה
             // Glide.with(holder.itemView.context).load(item.imageUrl).into(holder.itemImage)
         } else {
             holder.itemImage.visibility = View.GONE
@@ -106,4 +106,9 @@ class ShoppingItemsAdapter(
     }
 
     override fun getItemCount(): Int = items.size
+
+    fun updateItems(newItems: List<ShoppingItem>) {
+        items = newItems
+        notifyDataSetChanged()
+    }
 }

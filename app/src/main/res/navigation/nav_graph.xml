@@ -57,7 +57,7 @@
     <!-- ✅ תיקון: נוסיף את ShoppingListFragment -->
     <fragment
         android:id="@+id/shoppingListFragment"
-        android:name="com.example.shoppinglist.ShoppingListFragment"
+        android:name="com.example.shoppinglist.ui.shoppinglist.fragment.ShoppingListFragment"
         android:label="Shopping List">
 
         <action
@@ -78,7 +78,7 @@
 
     <fragment
         android:id="@+id/shoppingItemsFragment"
-        android:name="com.example.shoppinglist.ShoppingItemsFragment"
+        android:name="com.example.shoppinglist.ui.shoppinglist.fragment.ShoppingItemsFragment"
         android:label="Shopping Items">
         <argument
             android:name="listId"

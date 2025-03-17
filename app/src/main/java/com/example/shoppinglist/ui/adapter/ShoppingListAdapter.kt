@@ -1,25 +1,26 @@
-package com.example.shoppinglist
+package com.example.shoppinglist.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.shoppinglist.models.ShoppingList
+import com.example.shoppinglist.R
+import com.example.shoppinglist.data.local.models.ShoppingList
 
 class ShoppingListAdapter(
-    private val shoppingLists: List<ShoppingList>,
+    private var shoppingLists: List<ShoppingList>,
     private val onItemClick: (ShoppingList) -> Unit
 ) : RecyclerView.Adapter<ShoppingListAdapter.ShoppingListViewHolder>() {
 
     inner class ShoppingListViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val name: TextView = view.findViewById(R.id.listName) // ✅ לוודא שהשם תואם ל-XML
+        val name: TextView = view.findViewById(R.id.listName)
 
         init {
             view.setOnClickListener {
                 val position = adapterPosition
                 if (position != RecyclerView.NO_POSITION) {
-                    onItemClick(shoppingLists[position]) // ✅ מעביר את האובייקט בלחיצה
+                    onItemClick(shoppingLists[position])
                 }
             }
         }
@@ -37,5 +38,9 @@ class ShoppingListAdapter(
     }
 
     override fun getItemCount(): Int = shoppingLists.size
-}
 
+    fun updateLists(newLists: List<ShoppingList>) {
+        shoppingLists = newLists
+        notifyDataSetChanged()
+    }
+}

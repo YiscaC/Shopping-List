@@ -1,4 +1,4 @@
-package com.example.shoppinglist.models
+package com.example.shoppinglist.data.local.models
 
 data class ShoppingList(
     val id: String = "", // מזהה ייחודי

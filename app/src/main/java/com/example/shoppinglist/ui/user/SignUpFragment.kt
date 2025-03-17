@@ -1,4 +1,4 @@
-package com.example.shoppinglist
+package com.example.shoppinglist.ui.signup
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -9,7 +9,6 @@ import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,23 +19,20 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.shoppinglist.R
+import com.example.shoppinglist.viewmodel.SignUpViewModel
 
 class SignUpFragment : Fragment() {
 
-    private lateinit var auth: FirebaseAuth
-    private lateinit var db: FirebaseFirestore
+    private val viewModel: SignUpViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         val view = inflater.inflate(R.layout.fragment_sign_up, container, false)
-
-        auth = FirebaseAuth.getInstance()
-        db = FirebaseFirestore.getInstance()
 
         val usernameInput = view.findViewById<EditText>(R.id.etUsername)
         val emailInput = view.findViewById<EditText>(R.id.etEmailSignUp)
@@ -51,6 +47,7 @@ class SignUpFragment : Fragment() {
             override fun onClick(widget: View) {
                 findNavController().navigate(R.id.action_signUpFragment_to_loginFragment)
             }
+
             override fun updateDrawState(ds: TextPaint) {
                 super.updateDrawState(ds)
                 ds.color = ContextCompat.getColor(requireContext(), R.color.green)
@@ -71,7 +68,7 @@ class SignUpFragment : Fragment() {
                 if (password != confirmPassword) {
                     showAlert("Password Mismatch", "Passwords do not match. Please try again.")
                 } else if (isInternetAvailable()) {
-                    register(username, email, password)
+                    viewModel.register(username, email, password)
                 } else {
                     showAlert("No Internet", "No internet connection. Try again later.")
                 }
@@ -80,43 +77,24 @@ class SignUpFragment : Fragment() {
             }
         }
 
+        observeViewModel()
+
         return view
     }
 
-    private fun register(username: String, email: String, password: String) {
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener { result ->
-                val userId = result.user?.uid
-                if (userId != null) {
-                    saveUserToFirestore(userId, username, email)
-                }
-            }
-            .addOnFailureListener { e ->
-                when {
-                    e.message?.contains("email address is already in use") == true ->
-                        showAlert("Email Exists", "This email is already registered. Try logging in instead.")
-                    e.message?.contains("The given password is invalid") == true ->
-                        showAlert("Weak Password", "Password should be at least 6 characters long.")
-                    else -> showAlert("Registration Failed", e.message ?: "An error occurred.")
-                }
-            }
-    }
-
-    private fun saveUserToFirestore(userId: String, username: String, email: String) {
-        val user = hashMapOf(
-            "username" to username,
-            "email" to email
-        )
-        db.collection("users").document(userId).set(user)
-            .addOnSuccessListener {
-                Log.d("Firestore", "User added successfully")
+    private fun observeViewModel() {
+        viewModel.signUpSuccess.observe(viewLifecycleOwner) { success ->
+            if (success) {
                 Toast.makeText(requireContext(), "User registered successfully", Toast.LENGTH_SHORT).show()
                 findNavController().navigate(R.id.action_signUpFragment_to_partnerFragment)
             }
-            .addOnFailureListener { e ->
-                Log.w("Firestore", "Error adding user", e)
-                showAlert("Firestore Error", e.message ?: "An error occurred while saving user data.")
+        }
+
+        viewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
+            errorMessage?.let {
+                showAlert("Registration Failed", it)
             }
+        }
     }
 
     private fun showAlert(title: String, message: String) {

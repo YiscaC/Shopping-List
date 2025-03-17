@@ -1,4 +1,4 @@
-package com.example.shoppinglist
+package com.example.shoppinglist.ui.login
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -18,21 +18,21 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import android.widget.Toast
-import com.google.firebase.auth.FirebaseAuth
+import com.example.shoppinglist.R
+import com.example.shoppinglist.viewmodel.LoginViewModel
 
 class LoginFragment : Fragment() {
 
-    private lateinit var auth: FirebaseAuth
+    private val viewModel: LoginViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_login, container, false)
-
-        auth = FirebaseAuth.getInstance()
 
         val emailInput = view.findViewById<EditText>(R.id.etEmail)
         val passwordInput = view.findViewById<EditText>(R.id.etPassword)
@@ -45,6 +45,7 @@ class LoginFragment : Fragment() {
             override fun onClick(widget: View) {
                 findNavController().navigate(R.id.action_loginFragment_to_signUpFragment)
             }
+
             override fun updateDrawState(ds: TextPaint) {
                 super.updateDrawState(ds)
                 ds.color = ContextCompat.getColor(requireContext(), R.color.green)
@@ -61,7 +62,7 @@ class LoginFragment : Fragment() {
 
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 if (isInternetAvailable()) {
-                    login(email, password)
+                    viewModel.login(email, password)
                 } else {
                     showAlert("No Internet", "No internet connection. Try again later.")
                 }
@@ -70,22 +71,24 @@ class LoginFragment : Fragment() {
             }
         }
 
+        observeViewModel()
+
         return view
     }
 
-    private fun login(email: String, password: String) {
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
+    private fun observeViewModel() {
+        viewModel.loginResult.observe(viewLifecycleOwner) { success ->
+            if (success) {
                 Toast.makeText(requireContext(), "Login successful", Toast.LENGTH_SHORT).show()
                 findNavController().navigate(R.id.action_loginFragment_to_partnerFragment)
             }
-            .addOnFailureListener { e ->
-                when {
-                    e.message?.contains("no user record") == true -> showAlert("User Not Found", "No account found with this email.")
-                    e.message?.contains("password is invalid") == true -> showAlert("Incorrect Password", "The password you entered is incorrect.")
-                    else -> showAlert("Login Failed", e.message ?: "An error occurred.")
-                }
+        }
+
+        viewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
+            errorMessage?.let {
+                showAlert("Login Failed", it)
             }
+        }
     }
 
     private fun showAlert(title: String, message: String) {
