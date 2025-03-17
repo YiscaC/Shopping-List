@@ -13,7 +13,9 @@ class ShoppingItemsAdapter(
     private val onPurchasedChanged: (ShoppingItem, Boolean) -> Unit,
     private val onQuantityChanged: (ShoppingItem, Int) -> Unit,
     private val onCommentAdded: (ShoppingItem, String) -> Unit,
-    private val onImageAdded: (ShoppingItem) -> Unit
+    private val onImageAdded: (ShoppingItem) -> Unit,
+    private val onGallerySelected: (ShoppingItem) -> Unit // ✅ בחירת תמונה מהגלריה
+
 ) : RecyclerView.Adapter<ShoppingItemsAdapter.ShoppingItemViewHolder>() {
 
     inner class ShoppingItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -27,6 +29,7 @@ class ShoppingItemsAdapter(
         val commentInput: EditText = view.findViewById(R.id.itemComment)
         val sendCommentButton: ImageButton = view.findViewById(R.id.btnSendComment)
         val addImageButton: ImageButton = view.findViewById(R.id.btnAddImage)
+        val selectFromGalleryButton: ImageButton = view.findViewById(R.id.btnSelectFromGallery) // ✅ כפתור חדש
         val itemImage: ImageView = view.findViewById(R.id.itemImage)
     }
 
@@ -38,11 +41,13 @@ class ShoppingItemsAdapter(
 
     override fun onBindViewHolder(holder: ShoppingItemViewHolder, position: Int) {
         val item = items[position]
+
+        // ✅ הצגת שם הפריט
         holder.name.text = item.name
         holder.checkbox.isChecked = item.purchased
         holder.quantityText.setText(item.quantity.toString())
 
-        // ✅ לחיצה על שם המוצר -> פותחת את כל האזורים הנוספים
+        // ✅ לחיצה על שם המוצר -> הצגת אזורי כמות והערות
         holder.name.setOnClickListener {
             item.expanded = !item.expanded
             holder.quantityLayout.visibility = if (item.expanded) View.VISIBLE else View.GONE
@@ -51,12 +56,12 @@ class ShoppingItemsAdapter(
             notifyDataSetChanged()
         }
 
-        // ✅ עדכון מצב "נקנה"
+        // ✅ עדכון אם פריט נקנה
         holder.checkbox.setOnCheckedChangeListener { _, isChecked ->
             onPurchasedChanged(item, isChecked)
         }
 
-        // ✅ שינוי כמות
+        // ✅ שינוי כמות הפריט
         holder.increaseButton.setOnClickListener {
             val newQuantity = item.quantity + 1
             onQuantityChanged(item, newQuantity)
@@ -69,7 +74,7 @@ class ShoppingItemsAdapter(
             holder.quantityText.setText(newQuantity.toString())
         }
 
-        // ✅ שליחת תגובה
+        // ✅ שליחת תגובה לפריט
         holder.sendCommentButton.setOnClickListener {
             val commentText = holder.commentInput.text.toString().trim()
             if (commentText.isNotEmpty()) {
@@ -80,9 +85,23 @@ class ShoppingItemsAdapter(
             }
         }
 
-        // ✅ פתיחת גלריה להוספת תמונה
+        // ✅ פתיחת המצלמה להוספת תמונה
         holder.addImageButton.setOnClickListener {
             onImageAdded(item)
+        }
+
+        // ✅ פתיחת הגלריה לבחירת תמונה
+        holder.selectFromGalleryButton.setOnClickListener {
+            onGallerySelected(item)
+        }
+
+        // ✅ הצגת תמונה אם קיימת
+        if (!item.imageUrl.isNullOrEmpty()) {
+            holder.itemImage.visibility = View.VISIBLE
+            // שימוש ב-Glide או Picasso כדי להציג תמונה
+            // Glide.with(holder.itemView.context).load(item.imageUrl).into(holder.itemImage)
+        } else {
+            holder.itemImage.visibility = View.GONE
         }
     }
 
