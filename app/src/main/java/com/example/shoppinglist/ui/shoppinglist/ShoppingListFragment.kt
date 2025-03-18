@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.shoppinglist.databinding.FragmentShoppingListBinding
 import com.example.shoppinglist.ui.adapter.ShoppingListAdapter
 import com.example.shoppinglist.viewmodel.ShoppingListViewModel
+import com.example.shoppinglist.data.local.models.ShoppingList
 
 class ShoppingListFragment : Fragment() {
 
@@ -47,10 +48,10 @@ class ShoppingListFragment : Fragment() {
             showAddListDialog()
         }
 
-        viewModel.loadShoppingLists()
+        // ✅ הצגת הנתונים מ-Room, והם יתעדכנו כש-Firebase מסתנכרן
         viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
-            adapter.updateLists(lists)
-        }
+            val shoppingLists = lists.map { ShoppingList(it.id, it.name, it.owner, emptyMap()) }
+            adapter.updateLists(shoppingLists) }
     }
 
     private fun showAddListDialog() {

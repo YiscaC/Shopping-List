@@ -4,6 +4,7 @@ plugins {
     id("kotlin-kapt") // ✅ Kapt
     id("androidx.navigation.safeargs.kotlin") // ✅ SafeArgs
     id("com.google.gms.google-services") // ✅ Firebase plugin
+
 }
 
 android {
@@ -62,10 +63,10 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx") // Firestore
     implementation("com.google.firebase:firebase-storage-ktx") // Storage (לשמירת תמונות)
     implementation("com.google.firebase:firebase-database-ktx") // ✅ Realtime Database
-    implementation("androidx.room:room-runtime:2.5.0")
-    kapt("androidx.room:room-compiler:2.5.0")
+    implementation ("androidx.room:room-runtime:2.6.1")
+    kapt ("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
 
-    // Glide for image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
     kapt("com.github.bumptech.glide:compiler:4.16.0")
 

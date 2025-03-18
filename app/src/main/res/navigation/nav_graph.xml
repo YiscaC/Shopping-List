@@ -5,7 +5,7 @@
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.example.shoppinglist.LoginFragment"
+        android:name="com.example.shoppinglist.ui.login.LoginFragment"
         android:label="Login">
         <action
             android:id="@+id/action_loginFragment_to_partnerFragment"
@@ -17,7 +17,7 @@
 
     <fragment
         android:id="@+id/profileFragment"
-        android:name="com.example.shoppinglist.ProfileFragment"
+        android:name="com.example.shoppinglist.PartnerFragment"
         android:label="Profile">
         <action
             android:id="@+id/action_profileFragment_to_loginFragment"
@@ -26,7 +26,7 @@
 
     <fragment
         android:id="@+id/signUpFragment"
-        android:name="com.example.shoppinglist.SignUpFragment"
+        android:name="com.example.shoppinglist.ui.signup.SignUpFragment"
         android:label="Sign Up">
         <action
             android:id="@+id/action_signUpFragment_to_partnerFragment"
