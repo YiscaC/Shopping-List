@@ -17,7 +17,7 @@
 
     <fragment
         android:id="@+id/profileFragment"
-        android:name="com.example.shoppinglist.PartnerFragment"
+        android:name="com.example.shoppinglist.ui.profile.ProfileFragment"
         android:label="Profile">
         <action
             android:id="@+id/action_profileFragment_to_loginFragment"

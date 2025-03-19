@@ -1,15 +1,18 @@
 package com.example.shoppinglist.data.local
 
 import android.content.Context
-import androidx.room.Database
-import androidx.room.Room
-import androidx.room.RoomDatabase
+import androidx.room.*
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.shoppinglist.data.local.converters.ParticipantsConverter
 import com.example.shoppinglist.data.local.dao.ShoppingItemDao
 import com.example.shoppinglist.data.local.dao.ShoppingListDao
 import com.example.shoppinglist.data.local.models.ShoppingItemEntity
 import com.example.shoppinglist.data.local.models.ShoppingListEntity
+import androidx.room.migration.Migration
 
-@Database(entities = [ShoppingListEntity::class, ShoppingItemEntity::class], version = 2, exportSchema = false)
+
+@Database(entities = [ShoppingListEntity::class, ShoppingItemEntity::class], version = 4, exportSchema = false)
+@TypeConverters(ParticipantsConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingListDao(): ShoppingListDao
     abstract fun shoppingItemDao(): ShoppingItemDao
@@ -25,12 +28,19 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "shopping_list_db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_3_4) // ✅ הוספת מיגרציה לגרסה 4
+                    .fallbackToDestructiveMigration() // ✅ הרס המידע במקרה של בעיה במיגרציה
                     .build()
-                    //.addMigrations(MIGRATION_1_2)
-
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        // ✅ מיגרציה מגרסה 3 לגרסה 4 - הוספת ownerId + שינוי participants למחרוזת JSON
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE shopping_lists ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE shopping_lists ADD COLUMN participants TEXT NOT NULL DEFAULT '{}'")
             }
         }
     }

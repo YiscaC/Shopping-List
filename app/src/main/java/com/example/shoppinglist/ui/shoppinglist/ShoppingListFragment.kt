@@ -32,14 +32,20 @@ class ShoppingListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = ShoppingListAdapter(listOf()) { selectedList ->
-            val action = ShoppingListFragmentDirections
-                .actionShoppingListFragmentToShoppingItemsFragment(
-                    listId = selectedList.id,
-                    listName = selectedList.name
-                )
-            findNavController().navigate(action)
-        }
+        adapter = ShoppingListAdapter(
+            listOf(),
+            onItemClick = { selectedList ->
+                val action = ShoppingListFragmentDirections
+                    .actionShoppingListFragmentToShoppingItemsFragment(
+                        listId = selectedList.id,
+                        listName = selectedList.name
+                    )
+                findNavController().navigate(action)
+            },
+            onAddParticipantClick = { selectedList ->
+                showAddParticipantDialog(selectedList.id)
+            }
+        )
 
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
@@ -48,30 +54,56 @@ class ShoppingListFragment : Fragment() {
             showAddListDialog()
         }
 
-        // ✅ הצגת הנתונים מ-Room, והם יתעדכנו כש-Firebase מסתנכרן
         viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
-            adapter.updateLists(lists.map { ShoppingList(it.id, it.name, it.owner, emptyMap()) })
+            adapter.updateLists(lists.map { ShoppingList(it.id, it.name, it.owner, it.participants) })
         }
     }
 
+    // ✅ דיאלוג להוספת רשימה חדשה
     private fun showAddListDialog() {
-        val dialog = AlertDialog.Builder(requireContext())
-        dialog.setTitle("Create Shopping List")
-
         val input = EditText(requireContext())
         input.hint = "Enter list name"
-        dialog.setView(input)
 
-        dialog.setPositiveButton("Create") { _, _ ->
-            val listName = input.text.toString().trim()
-            if (listName.isNotEmpty()) {
-                viewModel.createShoppingList(listName)
-            } else {
-                Toast.makeText(requireContext(), "List name cannot be empty", Toast.LENGTH_SHORT).show()
+        AlertDialog.Builder(requireContext())
+            .setTitle("Create Shopping List")
+            .setView(input)
+            .setPositiveButton("Create") { _, _ ->
+                val listName = input.text.toString().trim()
+                if (listName.isNotEmpty()) {
+                    viewModel.createShoppingList(listName)
+                } else {
+                    Toast.makeText(requireContext(), "⚠ List name cannot be empty", Toast.LENGTH_SHORT).show()
+                }
             }
-        }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 
-        dialog.setNegativeButton("Cancel", null)
-        dialog.show()
+    // ✅ דיאלוג להוספת משתתף
+    private fun showAddParticipantDialog(listId: String) {
+        val input = EditText(requireContext())
+        input.hint = "Enter participant email"
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Add Participant")
+            .setView(input)
+            .setPositiveButton("Add") { _, _ ->
+                val participantEmail = input.text.toString().trim()
+                if (participantEmail.isNotEmpty()) {
+                    viewModel.addParticipantToList(listId, participantEmail) { success ->
+                        requireActivity().runOnUiThread {
+                            if (success) {
+                                Toast.makeText(requireContext(), "✅ Participant added!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(requireContext(), "❌ User not found!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "⚠ Participant email cannot be empty", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 }

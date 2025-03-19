@@ -11,17 +11,29 @@ import kotlinx.coroutines.launch
 class ShoppingListViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ShoppingListRepository(application)
-    val shoppingLists: LiveData<List<ShoppingListEntity>> = repository.getShoppingLists()
 
-    init {
+    // ✅ טעינת הרשימות מהמסד נתונים
+    val shoppingLists: LiveData<List<ShoppingListEntity>> = repository.getAllShoppingLists()
+
+    // ✅ יצירת רשימה חדשה
+    fun createShoppingList(name: String) {
         viewModelScope.launch {
-            repository.syncShoppingLists() // ✅ מבצע סנכרון בעת פתיחת האפליקציה
+            repository.createShoppingList(name)
         }
     }
 
-    fun createShoppingList(listName: String) {
+    // ✅ מחיקת רשימה
+    fun deleteShoppingList(listId: String) {
         viewModelScope.launch {
-            repository.createShoppingList(listName)
+            repository.deleteShoppingList(listId)
+        }
+    }
+
+    // ✅ הוספת משתתף רק אם קיים ב- Realtime Database
+    fun addParticipantToList(listId: String, participantEmail: String, callback: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = repository.addParticipant(listId, participantEmail)
+            callback(success)
         }
     }
 }
