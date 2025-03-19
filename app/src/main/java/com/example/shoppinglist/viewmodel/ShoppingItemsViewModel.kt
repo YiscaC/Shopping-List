@@ -1,70 +1,82 @@
 package com.example.shoppinglist.viewmodel
 
+import android.app.Application
 import android.net.Uri
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.example.shoppinglist.data.local.models.ShoppingItem
+import androidx.lifecycle.viewModelScope
+import com.example.shoppinglist.data.local.models.ShoppingItemEntity
 import com.example.shoppinglist.data.repository.ShoppingItemsRepository
 import com.google.firebase.storage.FirebaseStorage
-import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.launch
 
-class ShoppingItemsViewModel : ViewModel() {
+class ShoppingItemsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ShoppingItemsRepository()
+    private val repository = ShoppingItemsRepository(application)
     private val storage = FirebaseStorage.getInstance().reference
-    private val _itemsList = MutableLiveData<List<ShoppingItem>>()
-    val itemsList: LiveData<List<ShoppingItem>> get() = _itemsList
+    private var listId: String = ""
 
-    fun loadShoppingItems(listId: String) {
-        repository.loadShoppingItems(listId) { items ->
-            _itemsList.value = items
+    val itemsList: LiveData<List<ShoppingItemEntity>>
+        get() = repository.getShoppingItems(listId)
+
+    fun setListId(id: String) {
+        listId = id
+        viewModelScope.launch {
+            repository.syncShoppingItems(listId)
         }
     }
 
-    fun updateItemPurchased(listId: String, itemId: String, isChecked: Boolean) {
-        repository.updateItemPurchased(listId, itemId, isChecked)
+    fun updateItemPurchased(itemId: String, isChecked: Boolean) {
+        viewModelScope.launch {
+            repository.updateItemPurchased(listId, itemId, isChecked)
+        }
     }
 
-    fun updateItemQuantity(listId: String, itemId: String, newQuantity: Int) {
-        repository.updateItemQuantity(listId, itemId, newQuantity)
+    fun updateItemQuantity(itemId: String, newQuantity: Int) {
+        viewModelScope.launch {
+            repository.updateItemQuantity(listId, itemId, newQuantity)
+        }
     }
 
-    fun addItemToFirebase(listId: String, itemName: String) {
-        repository.addItemToFirebase(listId, itemName)
+    fun addItemToFirebase(itemName: String) {
+        viewModelScope.launch {
+            repository.addItemToFirebase(listId, itemName)
+        }
     }
 
-    fun addCommentToItem(listId: String, itemId: String, comment: String) {
-        repository.addCommentToItem(listId, itemId, comment)
+    fun addCommentToItem(itemId: String, comment: String) {
+        viewModelScope.launch {
+            repository.addCommentToItem(listId, itemId, comment)
+        }
     }
 
-    fun updateItemImage(listId: String, itemId: String, imageUrl: String) {
-        repository.updateItemImage(listId, itemId, imageUrl)
+    fun updateItemImage(itemId: String, imageUrl: String) {
+        viewModelScope.launch {
+            repository.updateItemImage(listId, itemId, imageUrl)
+        }
     }
 
-    // 📸 העלאת תמונה מהמצלמה או הגלריה (URI)
-    fun uploadImageForItem(listId: String, itemId: String, imageUri: Uri) {
+    fun uploadImageForItem(itemId: String, imageUri: Uri) {
         val imageRef = storage.child("item_images/$itemId.jpg")
         val uploadTask = imageRef.putFile(imageUri)
 
         uploadTask.addOnSuccessListener {
             imageRef.downloadUrl.addOnSuccessListener { uri ->
-                updateItemImage(listId, itemId, uri.toString())
+                updateItemImage(itemId, uri.toString())
             }
         }.addOnFailureListener {
             Log.e("Firebase", "Error uploading image: ${it.message}")
         }
     }
 
-    // 📸 העלאת תמונה מהמצלמה (Bitmap)
-    fun uploadImageForItem(listId: String, itemId: String, imageData: ByteArray) {
+    fun uploadImageForItem(itemId: String, imageData: ByteArray) {
         val imageRef = storage.child("item_images/$itemId.jpg")
         val uploadTask = imageRef.putBytes(imageData)
 
         uploadTask.addOnSuccessListener {
             imageRef.downloadUrl.addOnSuccessListener { uri ->
-                updateItemImage(listId, itemId, uri.toString())
+                updateItemImage(itemId, uri.toString())
             }
         }.addOnFailureListener {
             Log.e("Firebase", "Error uploading image: ${it.message}")

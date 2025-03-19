@@ -41,22 +41,23 @@ class ShoppingItemsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewModel.setListId(args.listId) // ✅ הגדרת ה-listId לפני הכל
         binding.txtListName.text = args.listName
 
         adapter = ShoppingItemsAdapter(
-            listOf(),
+            emptyList(),
             onItemClick = { selectedItem ->
                 selectedItem.expanded = !selectedItem.expanded
                 adapter.notifyDataSetChanged()
             },
             onPurchasedChanged = { selectedItem, isChecked ->
-                viewModel.updateItemPurchased(args.listId, selectedItem.id, isChecked)
+                viewModel.updateItemPurchased(selectedItem.id, isChecked)
             },
             onQuantityChanged = { selectedItem, newQuantity ->
-                viewModel.updateItemQuantity(args.listId, selectedItem.id, newQuantity)
+                viewModel.updateItemQuantity(selectedItem.id, newQuantity)
             },
             onCommentAdded = { selectedItem, comment ->
-                viewModel.addCommentToItem(args.listId, selectedItem.id, comment)
+                viewModel.addCommentToItem(selectedItem.id, comment)
             },
             onImageAdded = { selectedItem ->
                 currentItemId = selectedItem.id
@@ -75,33 +76,11 @@ class ShoppingItemsFragment : Fragment() {
             showAddItemDialog()
         }
 
-        viewModel.loadShoppingItems(args.listId)
         viewModel.itemsList.observe(viewLifecycleOwner) { items ->
-            adapter.updateItems(items)
+            adapter.updateItems(items.map { it.toShoppingItem() })
         }
     }
 
-    private fun showAddItemDialog() {
-        val editText = EditText(requireContext()).apply {
-            hint = "Enter item name"
-        }
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Add Item")
-            .setView(editText)
-            .setPositiveButton("Add") { _, _ ->
-                val itemName = editText.text.toString().trim()
-                if (itemName.isNotEmpty()) {
-                    viewModel.addItemToFirebase(args.listId, itemName)
-                } else {
-                    Toast.makeText(requireContext(), "Item name cannot be empty", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    // 📸 מצלמה - בקשת הרשאה
     private fun requestCameraPermission() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             openCamera()
@@ -118,7 +97,11 @@ class ShoppingItemsFragment : Fragment() {
         }
     }
 
-    // 📸 פתיחת מצלמה
+    private fun openCamera() {
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        cameraLauncher.launch(intent)
+    }
+
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val imageBitmap = result.data?.extras?.get("data") as Bitmap
@@ -126,27 +109,39 @@ class ShoppingItemsFragment : Fragment() {
         }
     }
 
-    private fun openCamera() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        cameraLauncher.launch(intent)
+    private fun openGallery() {
+        galleryLauncher.launch("image/*")
     }
 
-    // 🖼️ פתיחת גלריה
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             uploadImageToFirebase(it)
         }
     }
 
-    private fun openGallery() {
-        galleryLauncher.launch("image/*")
-    }
-
-    // 🚀 העלאת תמונה ל-Firebase
     private fun uploadImageToFirebase(uri: Uri) {
         currentItemId?.let { itemId ->
-            viewModel.uploadImageForItem(args.listId, itemId, uri)
+            viewModel.uploadImageForItem(itemId, uri)
         }
+    }
+    private fun showAddItemDialog() {
+        val editText = EditText(requireContext()).apply {
+            hint = "Enter item name"
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Add Item")
+            .setView(editText)
+            .setPositiveButton("Add") { _, _ ->
+                val itemName = editText.text.toString().trim()
+                if (itemName.isNotEmpty()) {
+                    viewModel.addItemToFirebase(itemName) // ✅ אין צורך ב-args.listId כי הוא כבר ב-ViewModel
+                } else {
+                    Toast.makeText(requireContext(), "Item name cannot be empty", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun uploadImageToFirebase(imageBitmap: Bitmap) {
@@ -155,7 +150,7 @@ class ShoppingItemsFragment : Fragment() {
             imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
             val imageData = baos.toByteArray()
 
-            viewModel.uploadImageForItem(args.listId, itemId, imageData)
+            viewModel.uploadImageForItem(itemId, imageData)
         }
     }
 }

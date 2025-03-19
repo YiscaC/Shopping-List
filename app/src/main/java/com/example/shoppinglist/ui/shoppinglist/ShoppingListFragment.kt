@@ -50,8 +50,8 @@ class ShoppingListFragment : Fragment() {
 
         // ✅ הצגת הנתונים מ-Room, והם יתעדכנו כש-Firebase מסתנכרן
         viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
-            val shoppingLists = lists.map { ShoppingList(it.id, it.name, it.owner, emptyMap()) }
-            adapter.updateLists(shoppingLists) }
+            adapter.updateLists(lists.map { ShoppingList(it.id, it.name, it.owner, emptyMap()) })
+        }
     }
 
     private fun showAddListDialog() {

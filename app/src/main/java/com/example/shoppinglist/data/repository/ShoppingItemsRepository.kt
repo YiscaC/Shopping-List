@@ -1,46 +1,69 @@
 package com.example.shoppinglist.data.repository
 
+import android.content.Context
+import androidx.lifecycle.LiveData
+import com.example.shoppinglist.data.local.AppDatabase
+import com.example.shoppinglist.data.local.models.ShoppingItemEntity
 import com.example.shoppinglist.data.local.models.ShoppingItem
 import com.google.firebase.database.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class ShoppingItemsRepository {
+class ShoppingItemsRepository(context: Context) {
 
     private val db: DatabaseReference = FirebaseDatabase.getInstance().reference.child("shoppingLists")
+    private val shoppingItemDao = AppDatabase.getDatabase(context).shoppingItemDao()
 
-    fun loadShoppingItems(listId: String, callback: (List<ShoppingItem>) -> Unit) {
-        db.child(listId).child("items").addValueEventListener(object : ValueEventListener {
+    fun getShoppingItems(listId: String): LiveData<List<ShoppingItemEntity>> {
+        return shoppingItemDao.getItemsByListId(listId)
+    }
+
+    fun syncShoppingItems(listId: String) {
+        db.child(listId).child("items").addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val items = mutableListOf<ShoppingItem>()
+                val items = mutableListOf<ShoppingItemEntity>()
                 for (itemSnapshot in snapshot.children) {
                     val item = itemSnapshot.getValue(ShoppingItem::class.java)
-                    item?.let { items.add(it) }
+                    item?.let {
+                        items.add(ShoppingItemEntity(it.id, listId, it.name, it.quantity, it.purchased, it.imageUrl))
+                    }
                 }
-                callback(items)
+                CoroutineScope(Dispatchers.IO).launch {
+                    items.forEach { shoppingItemDao.insertItem(it) }
+                }
             }
 
             override fun onCancelled(error: DatabaseError) {}
         })
     }
 
-    fun updateItemPurchased(listId: String, itemId: String, isChecked: Boolean) {
+    suspend fun updateItemPurchased(listId: String, itemId: String, isChecked: Boolean) {
         db.child(listId).child("items").child(itemId).child("purchased").setValue(isChecked)
+        shoppingItemDao.updateItemPurchased(itemId, isChecked)
     }
 
-    fun updateItemQuantity(listId: String, itemId: String, newQuantity: Int) {
+    suspend fun updateItemQuantity(listId: String, itemId: String, newQuantity: Int) {
         db.child(listId).child("items").child(itemId).child("quantity").setValue(newQuantity)
+        shoppingItemDao.updateItemQuantity(itemId, newQuantity)
     }
 
-    fun addCommentToItem(listId: String, itemId: String, comment: String) {
+    suspend fun addItemToFirebase(listId: String, itemName: String) {
+        val newItemId = db.child(listId).child("items").push().key ?: return
+        val newItem = ShoppingItemEntity(newItemId, listId, itemName, 1, false, null)
+
+        db.child(listId).child("items").child(newItemId).setValue(newItem)
+        withContext(Dispatchers.IO) {
+            shoppingItemDao.insertItem(newItem)
+        }
+    }
+
+    suspend fun addCommentToItem(listId: String, itemId: String, comment: String) {
         db.child(listId).child("items").child(itemId).child("comments").push().setValue(comment)
     }
 
-    fun updateItemImage(listId: String, itemId: String, imageUrl: String) {
+    suspend fun updateItemImage(listId: String, itemId: String, imageUrl: String) {
         db.child(listId).child("items").child(itemId).child("imageUrl").setValue(imageUrl)
-    }
-
-    fun addItemToFirebase(listId: String, itemName: String) {
-        val newItemId = db.child(listId).child("items").push().key ?: return
-        val newItem = ShoppingItem(id = newItemId, name = itemName, quantity = 1, purchased = false)
-        db.child(listId).child("items").child(newItemId).setValue(newItem)
     }
 }
