@@ -15,12 +15,15 @@ import com.example.shoppinglist.databinding.FragmentShoppingListBinding
 import com.example.shoppinglist.ui.adapter.ShoppingListAdapter
 import com.example.shoppinglist.viewmodel.ShoppingListViewModel
 import com.example.shoppinglist.data.local.models.ShoppingList
+import com.google.firebase.auth.FirebaseAuth
 
 class ShoppingListFragment : Fragment() {
 
     private lateinit var binding: FragmentShoppingListBinding
     private val viewModel: ShoppingListViewModel by viewModels()
     private lateinit var adapter: ShoppingListAdapter
+
+    private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -54,8 +57,10 @@ class ShoppingListFragment : Fragment() {
             showAddListDialog()
         }
 
+        // ✅ מציגים רק את הרשימות של המשתמש המחובר
         viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
-            adapter.updateLists(lists.map { ShoppingList(it.id, it.name, it.owner, it.participants) })
+            val userLists = lists.filter { it.ownerId == currentUserId || it.participants.containsKey(currentUserId) }
+            adapter.updateLists(userLists.map { ShoppingList(it.id, it.name, it.ownerId, it.participants) })
         }
     }
 
@@ -79,7 +84,7 @@ class ShoppingListFragment : Fragment() {
             .show()
     }
 
-    // ✅ דיאלוג להוספת משתתף
+    // ✅ דיאלוג להוספת משתתף לרשימה
     private fun showAddParticipantDialog(listId: String) {
         val input = EditText(requireContext())
         input.hint = "Enter participant email"

@@ -10,6 +10,6 @@ import com.example.shoppinglist.data.local.converters.ParticipantsConverter
 data class ShoppingListEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val owner: String, // 🔹 שימוש ב- owner (לא ownerId)
-    val participants: Map<String, Boolean> = emptyMap() // 🔹 החזרת משתתפים כ-Map ולא כ-String JSON
+    val ownerId: String, // ✅ שמירת ה- UID של היוזר המחובר
+    val participants: Map<String, Boolean> = emptyMap()
 )

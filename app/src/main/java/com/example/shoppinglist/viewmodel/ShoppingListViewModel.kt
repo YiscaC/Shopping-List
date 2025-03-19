@@ -12,24 +12,21 @@ class ShoppingListViewModel(application: Application) : AndroidViewModel(applica
 
     private val repository = ShoppingListRepository(application)
 
-    // ✅ טעינת הרשימות מהמסד נתונים
-    val shoppingLists: LiveData<List<ShoppingListEntity>> = repository.getAllShoppingLists()
+    // ✅ קבלת רק הרשימות של המשתמש המחובר
+    val shoppingLists: LiveData<List<ShoppingListEntity>> = repository.getUserShoppingLists()
 
-    // ✅ יצירת רשימה חדשה
     fun createShoppingList(name: String) {
         viewModelScope.launch {
             repository.createShoppingList(name)
         }
     }
 
-    // ✅ מחיקת רשימה
     fun deleteShoppingList(listId: String) {
         viewModelScope.launch {
             repository.deleteShoppingList(listId)
         }
     }
 
-    // ✅ הוספת משתתף רק אם קיים ב- Realtime Database
     fun addParticipantToList(listId: String, participantEmail: String, callback: (Boolean) -> Unit) {
         viewModelScope.launch {
             val success = repository.addParticipant(listId, participantEmail)

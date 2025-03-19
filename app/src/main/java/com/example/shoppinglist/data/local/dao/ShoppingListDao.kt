@@ -6,8 +6,9 @@ import com.example.shoppinglist.data.local.models.ShoppingListEntity
 
 @Dao
 interface ShoppingListDao {
-    @Query("SELECT * FROM shopping_lists") // 🔹 החזרת כל הרשימות בלי קשר למשתמש
-    fun getAllShoppingLists(): LiveData<List<ShoppingListEntity>>
+    // ✅ החזרת רשימות שהמשתמש יצר או שהוא משתתף בהן
+    @Query("SELECT * FROM shopping_lists WHERE ownerId = :userId OR participants LIKE '%' || :userId || '%' ")
+    fun getUserShoppingLists(userId: String): LiveData<List<ShoppingListEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShoppingList(shoppingList: ShoppingListEntity)

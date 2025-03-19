@@ -1,10 +1,10 @@
 package com.example.shoppinglist.data.repository
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.LiveData
 import com.example.shoppinglist.data.local.AppDatabase
 import com.example.shoppinglist.data.local.models.ShoppingListEntity
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -13,18 +13,22 @@ import kotlinx.coroutines.withContext
 class ShoppingListRepository(context: Context) {
 
     private val db = FirebaseDatabase.getInstance().reference.child("shoppingLists")
-    private val usersRef = FirebaseDatabase.getInstance().reference.child("users") // 🔹 הוספנו נתיב למשתמשים
+    private val usersRef = FirebaseDatabase.getInstance().reference.child("users")
     private val shoppingListDao = AppDatabase.getDatabase(context).shoppingListDao()
 
-    // ✅ החזרת כל הרשימות מה-ROOM
-    fun getAllShoppingLists(): LiveData<List<ShoppingListEntity>> {
-        return shoppingListDao.getAllShoppingLists()
+    private val currentUserId: String? = FirebaseAuth.getInstance().currentUser?.uid
+
+    // ✅ מחזיר רק את הרשימות של המשתמש המחובר
+    fun getUserShoppingLists(): LiveData<List<ShoppingListEntity>> {
+        return currentUserId?.let { shoppingListDao.getUserShoppingLists(it) }
+            ?: throw IllegalStateException("User not logged in")
     }
 
-    // ✅ יצירת רשימה
+    // ✅ יצירת רשימה עם userId כ- ownerId
     suspend fun createShoppingList(name: String) {
         val newListId = db.push().key ?: return
-        val newList = ShoppingListEntity(newListId, name, owner = "Admin")
+        val ownerId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val newList = ShoppingListEntity(newListId, name, ownerId = ownerId)
 
         db.child(newListId).setValue(newList)
         withContext(Dispatchers.IO) {
@@ -43,35 +47,26 @@ class ShoppingListRepository(context: Context) {
         }
     }
 
-    // ✅ בדיקת קיום משתמש ב- Firebase **Realtime Database**
+    // ✅ בדיקת קיום משתמש ב-Firebase Realtime Database
     suspend fun checkIfUserExists(email: String): Boolean {
         return try {
-            val sanitizedEmail = email.replace(".", ",") // 🔹 טיפול במיילים
-            Log.d("FirebaseAuthCheck", "🔍 Checking if user exists: $email")
-
+            val sanitizedEmail = email.replace(".", ",")
             val snapshot = usersRef.child(sanitizedEmail).get().await()
-            val exists = snapshot.exists()
-
-            Log.d("FirebaseAuthCheck", "✅ User exists: $exists ($email)")
-            exists
+            snapshot.exists()
         } catch (e: Exception) {
-            Log.e("FirebaseAuthCheck", "❌ Error checking user: ${e.message}")
             false
         }
     }
 
-    // ✅ הוספת משתתף לרשימה רק אם הוא קיים **ב-Realtime Database**
+    // ✅ הוספת משתתף
     suspend fun addParticipant(listId: String, participantEmail: String): Boolean {
-        val sanitizedEmail = participantEmail.replace(".", ",") // 🔹 טיפול במיילים
+        val sanitizedEmail = participantEmail.replace(".", ",")
 
-        if (!checkIfUserExists(participantEmail)) {
-            Log.e("FirebaseAuthCheck", "❌ User not found: $participantEmail")
-            return false
-        }
+        if (!checkIfUserExists(participantEmail)) return false
 
         withContext(Dispatchers.IO) {
             val list = shoppingListDao.getListById(listId) ?: return@withContext
-            val updatedParticipants = list.participants + (participantEmail to true)
+            val updatedParticipants = list.participants + (sanitizedEmail to true)
             val updatedList = list.copy(participants = updatedParticipants)
 
             shoppingListDao.updateList(updatedList)
