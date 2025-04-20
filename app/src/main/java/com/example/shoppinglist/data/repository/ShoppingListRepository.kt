@@ -62,16 +62,22 @@ class ShoppingListRepository(context: Context) {
     suspend fun addParticipant(listId: String, participantEmail: String): Boolean {
         val sanitizedEmail = participantEmail.replace(".", ",")
 
-        if (!checkIfUserExists(participantEmail)) return false
+        val snapshot = usersRef.child(sanitizedEmail).get().await()
+        if (!snapshot.exists()) return false
+
+        val participantUid = snapshot.child("userId").value as? String ?: return false
 
         withContext(Dispatchers.IO) {
             val list = shoppingListDao.getListById(listId) ?: return@withContext
-            val updatedParticipants = list.participants + (sanitizedEmail to true)
+            val updatedParticipants = list.participants + (participantUid to true)
             val updatedList = list.copy(participants = updatedParticipants)
 
             shoppingListDao.updateList(updatedList)
-            db.child(listId).child("participants").child(sanitizedEmail).setValue(true)
+            db.child(listId).child("participants").child(participantUid).setValue(true)
         }
+
         return true
     }
+
+
 }
