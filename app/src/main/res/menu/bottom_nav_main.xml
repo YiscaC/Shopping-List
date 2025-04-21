@@ -1,0 +1,16 @@
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/shoppingListFragment"
+        android:icon="@drawable/ic_list"
+        android:title="רשימות"/>
+
+
+    <group />
+    <item
+        android:id="@+id/profileFragment"
+        android:icon="@drawable/ic_person"
+        android:title="פרופיל"/>
+
+</menu>

@@ -23,6 +23,7 @@ import java.io.File
 
 class ProfileFragment : Fragment() {
 
+
     private lateinit var binding: FragmentProfileBinding
     private val viewModel: ProfileViewModel by viewModels()
     private lateinit var progressBar: ProgressBar

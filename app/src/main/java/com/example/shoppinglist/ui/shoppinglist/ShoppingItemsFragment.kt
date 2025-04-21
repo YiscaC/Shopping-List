@@ -18,11 +18,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.shoppinglist.MainActivity
 import com.example.shoppinglist.databinding.FragmentShoppingItemsBinding
 import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
 import com.example.shoppinglist.ui.adapter.ShoppingItemsAdapter
+import androidx.navigation.fragment.navArgs
 import java.io.ByteArrayOutputStream
 
 class ShoppingItemsFragment : Fragment() {
@@ -41,7 +42,14 @@ class ShoppingItemsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.setListId(args.listId) // ✅ הגדרת ה-listId לפני הכל
+        viewModel.setListId(args.listId)
+
+        // ✅ שמירה ב־MainActivity
+        (activity as? MainActivity)?.apply {
+            activeListId = args.listId
+            activeListName = args.listName
+        }
+
         binding.txtListName.text = args.listName
 
         adapter = ShoppingItemsAdapter(
@@ -124,6 +132,17 @@ class ShoppingItemsFragment : Fragment() {
             viewModel.uploadImageForItem(itemId, uri)
         }
     }
+
+    private fun uploadImageToFirebase(imageBitmap: Bitmap) {
+        currentItemId?.let { itemId ->
+            val baos = ByteArrayOutputStream()
+            imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+            val imageData = baos.toByteArray()
+
+            viewModel.uploadImageForItem(itemId, imageData)
+        }
+    }
+
     private fun showAddItemDialog() {
         val editText = EditText(requireContext()).apply {
             hint = "Enter item name"
@@ -135,22 +154,12 @@ class ShoppingItemsFragment : Fragment() {
             .setPositiveButton("Add") { _, _ ->
                 val itemName = editText.text.toString().trim()
                 if (itemName.isNotEmpty()) {
-                    viewModel.addItemToFirebase(itemName) // ✅ אין צורך ב-args.listId כי הוא כבר ב-ViewModel
+                    viewModel.addItemToFirebase(itemName)
                 } else {
                     Toast.makeText(requireContext(), "Item name cannot be empty", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)
             .show()
-    }
-
-    private fun uploadImageToFirebase(imageBitmap: Bitmap) {
-        currentItemId?.let { itemId ->
-            val baos = ByteArrayOutputStream()
-            imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-            val imageData = baos.toByteArray()
-
-            viewModel.uploadImageForItem(itemId, imageData)
-        }
     }
 }
