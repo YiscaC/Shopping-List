@@ -18,12 +18,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.shoppinglist.MainActivity
 import com.example.shoppinglist.databinding.FragmentShoppingItemsBinding
-import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
 import com.example.shoppinglist.ui.adapter.ShoppingItemsAdapter
-import androidx.navigation.fragment.navArgs
+import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
 import java.io.ByteArrayOutputStream
 
 class ShoppingItemsFragment : Fragment() {
@@ -34,7 +34,9 @@ class ShoppingItemsFragment : Fragment() {
     private lateinit var adapter: ShoppingItemsAdapter
     private var currentItemId: String? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
         binding = FragmentShoppingItemsBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -42,9 +44,10 @@ class ShoppingItemsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // ✅ הגדרת ה־listId ב־ViewModel
         viewModel.setListId(args.listId)
 
-        // ✅ שמירה ב־MainActivity
+        // ✅ שמירה ב־MainActivity עבור ניווט מהיר
         (activity as? MainActivity)?.apply {
             activeListId = args.listId
             activeListName = args.listName
@@ -90,19 +93,20 @@ class ShoppingItemsFragment : Fragment() {
     }
 
     private fun requestCameraPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
             openCamera()
         } else {
             requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    private val requestCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            openCamera()
-        } else {
-            Toast.makeText(requireContext(), "Camera permission required", Toast.LENGTH_SHORT).show()
-        }
+    private val requestCameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) openCamera()
+        else Toast.makeText(requireContext(), "Camera permission required", Toast.LENGTH_SHORT).show()
     }
 
     private fun openCamera() {
@@ -110,10 +114,12 @@ class ShoppingItemsFragment : Fragment() {
         cameraLauncher.launch(intent)
     }
 
-    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val imageBitmap = result.data?.extras?.get("data") as Bitmap
-            uploadImageToFirebase(imageBitmap)
+            val imageBitmap = result.data?.extras?.get("data") as? Bitmap
+            imageBitmap?.let { uploadImageToFirebase(it) }
         }
     }
 
@@ -121,10 +127,10 @@ class ShoppingItemsFragment : Fragment() {
         galleryLauncher.launch("image/*")
     }
 
-    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            uploadImageToFirebase(it)
-        }
+    private val galleryLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { uploadImageToFirebase(it) }
     }
 
     private fun uploadImageToFirebase(uri: Uri) {
@@ -138,7 +144,6 @@ class ShoppingItemsFragment : Fragment() {
             val baos = ByteArrayOutputStream()
             imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
             val imageData = baos.toByteArray()
-
             viewModel.uploadImageForItem(itemId, imageData)
         }
     }

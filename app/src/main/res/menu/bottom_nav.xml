@@ -2,6 +2,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/shoppingListFragment"
+        android:icon="@drawable/ic_list"
+        android:title="רשימות" />
+
+    <item
+        android:id="@+id/profileFragment"
+        android:icon="@drawable/ic_person"
+        android:title="פרופיל" />
+
+    <item
         android:id="@+id/shoppingItemsFragment"
         android:icon="@drawable/ic_cart"
         android:title="פריטים" />

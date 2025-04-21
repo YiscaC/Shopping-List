@@ -9,15 +9,12 @@ import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
+import com.example.shoppinglist.ui.shoppinglist.fragment.ShoppingListFragmentDirections
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
-    private var currentMenu: Int = R.menu.bottom_nav_main
-
-    // ✅ משתנים לזיכרון של הרשימה הפעילה
     var activeListId: String? = null
     var activeListName: String? = null
 
@@ -35,93 +32,72 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
 
         val bottomNavView = findViewById<BottomNavigationView>(R.id.bottom_nav_view)
-        bottomNavView.setupWithNavController(navController)
 
+        // ✅ תפריט משתנה לפי היעד הנוכחי
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            bottomNavView.menu.clear()
+
             when (destination.id) {
+                R.id.shoppingItemsFragment, R.id.participantsFragment -> {
+                    bottomNavView.inflateMenu(R.menu.bottom_nav)
+                    bottomNavView.menu.findItem(R.id.shoppingItemsFragment).isVisible = true
+                    bottomNavView.menu.findItem(R.id.participantsFragment).isVisible = true
+                    bottomNavView.menu.findItem(R.id.shoppingListFragment).isVisible = false
+                    bottomNavView.menu.findItem(R.id.profileFragment).isVisible = false
+                }
+
+                R.id.shoppingListFragment, R.id.profileFragment, R.id.partnerFragment -> {
+                    bottomNavView.inflateMenu(R.menu.bottom_nav)
+                    bottomNavView.menu.findItem(R.id.shoppingListFragment).isVisible = true
+                    bottomNavView.menu.findItem(R.id.profileFragment).isVisible = true
+                    bottomNavView.menu.findItem(R.id.shoppingItemsFragment).isVisible = false
+                    bottomNavView.menu.findItem(R.id.participantsFragment).isVisible = false
+                }
+
                 R.id.loginFragment, R.id.signUpFragment -> {
                     bottomNavView.visibility = View.GONE
-                }
-
-                R.id.shoppingItemsFragment, R.id.participantsFragment -> {
-                    bottomNavView.visibility = View.VISIBLE
-                    bottomNavView.menu.clear()
-                    bottomNavView.inflateMenu(R.menu.bottom_nav_list)
-                    currentMenu = R.menu.bottom_nav_list
-
-                    // ✅ סימון ידני במקום selectedItemId
-                    markMenuItemAsSelected(bottomNavView, destination.id)
-
-                    bottomNavView.setOnItemSelectedListener { item ->
-                        if (item.itemId == navController.currentDestination?.id) {
-                            return@setOnItemSelectedListener true
-                        }
-
-                        when (item.itemId) {
-                            R.id.shoppingItemsFragment -> {
-                                val listId = activeListId
-                                val listName = activeListName
-
-                                if (listId != null && listName != null) {
-                                    val bundle = Bundle().apply {
-                                        putString("listId", listId)
-                                        putString("listName", listName)
-                                    }
-                                    navController.navigate(R.id.shoppingItemsFragment, bundle)
-                                } else {
-                                    Toast.makeText(this, "⚠️ אין רשימה פעילה", Toast.LENGTH_SHORT).show()
-                                }
-                                true
-                            }
-
-                            R.id.participantsFragment,
-                            R.id.profileFragment -> {
-                                NavigationUI.onNavDestinationSelected(item, navController)
-                                true
-                            }
-
-                            else -> false
-                        }
-                    }
-                }
-
-                R.id.shoppingListFragment, R.id.partnerFragment -> {
-                    bottomNavView.visibility = View.VISIBLE
-                    bottomNavView.menu.clear()
-                    bottomNavView.inflateMenu(R.menu.bottom_nav_main)
-                    currentMenu = R.menu.bottom_nav_main
-
-                    // ✅ סימון ידני במקום selectedItemId
-                    markMenuItemAsSelected(bottomNavView, destination.id)
-
-                    bottomNavView.setOnItemSelectedListener { item ->
-                        if (item.itemId == navController.currentDestination?.id) {
-                            return@setOnItemSelectedListener true
-                        }
-
-                        when (item.itemId) {
-                            R.id.shoppingListFragment,
-                            R.id.profileFragment -> {
-                                NavigationUI.onNavDestinationSelected(item, navController)
-                                true
-                            }
-
-                            else -> false
-                        }
-                    }
-                }
-
-                R.id.profileFragment -> {
-                    bottomNavView.visibility = View.VISIBLE
-                    bottomNavView.menu.clear()
-                    bottomNavView.inflateMenu(currentMenu)
-
-                    // ✅ סימון ידני גם כאן
-                    markMenuItemAsSelected(bottomNavView, destination.id)
+                    return@addOnDestinationChangedListener
                 }
 
                 else -> {
-                    bottomNavView.visibility = View.VISIBLE
+                    bottomNavView.inflateMenu(R.menu.bottom_nav)
+                }
+            }
+
+            bottomNavView.visibility = View.VISIBLE
+
+            // ✅ סימון ידני של הפריט הפעיל
+            markMenuItemAsSelected(bottomNavView, destination.id)
+        }
+
+        // ✅ ניווט כולל סימון ידני לאחר SafeArgs
+        bottomNavView.setOnItemSelectedListener { item ->
+            val navController = findNavController(R.id.nav_host_fragment)
+            if (item.itemId == navController.currentDestination?.id) {
+                return@setOnItemSelectedListener true
+            }
+
+            when (item.itemId) {
+                R.id.shoppingItemsFragment -> {
+                    val listId = activeListId
+                    val listName = activeListName
+                    if (listId != null && listName != null) {
+                        val action = ShoppingListFragmentDirections
+                            .actionShoppingListFragmentToShoppingItemsFragment(listId, listName)
+                        navController.navigate(action)
+                        bottomNavView.selectedItemId = item.itemId
+                    } else {
+                        Toast.makeText(this, "⚠️ אין רשימה פעילה", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+
+                else -> {
+                    val handled = NavigationUI.onNavDestinationSelected(item, navController)
+                    if (handled) {
+                        bottomNavView.selectedItemId = item.itemId
+                    }
+                    handled
                 }
             }
         }
@@ -142,12 +118,11 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
-    // ✅ פונקציה שמסמנת ידנית את הפריט הפעיל בתפריט
+    // ✅ סימון ידני של הפריט הפעיל בתפריט – עם תיקון post
     private fun markMenuItemAsSelected(bottomNavView: BottomNavigationView, destinationId: Int) {
-        val menu = bottomNavView.menu
-        for (i in 0 until menu.size()) {
-            val item = menu.getItem(i)
-            item.isChecked = item.itemId == destinationId
+        bottomNavView.post {
+            val item = bottomNavView.menu.findItem(destinationId)
+            item?.isChecked = true
         }
     }
 }

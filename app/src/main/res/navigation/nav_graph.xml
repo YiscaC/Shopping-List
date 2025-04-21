@@ -16,15 +16,6 @@
     </fragment>
 
     <fragment
-        android:id="@+id/profileFragment"
-        android:name="com.example.shoppinglist.ui.profile.ProfileFragment"
-        android:label="Profile">
-        <action
-            android:id="@+id/action_profileFragment_to_loginFragment"
-            app:destination="@id/loginFragment"/>
-    </fragment>
-
-    <fragment
         android:id="@+id/signUpFragment"
         android:name="com.example.shoppinglist.ui.signup.SignUpFragment"
         android:label="Sign Up">
@@ -40,40 +31,37 @@
         android:id="@+id/partnerFragment"
         android:name="com.example.shoppinglist.PartnerFragment"
         android:label="Partner">
-
         <action
             android:id="@+id/action_partnerFragment_to_shoppingListFragment"
             app:destination="@id/shoppingListFragment"/>
-
         <action
             android:id="@+id/action_partnerFragment_to_loginFragment"
-            app:destination="@id/loginFragment"/> <!-- ✅ תיקון -->
-
+            app:destination="@id/loginFragment"/>
         <action
             android:id="@+id/action_partnerFragment_to_profileFragment"
             app:destination="@id/profileFragment"/>
     </fragment>
 
-    <!-- ✅ תיקון: נוסיף את ShoppingListFragment -->
     <fragment
         android:id="@+id/shoppingListFragment"
         android:name="com.example.shoppinglist.ui.shoppinglist.fragment.ShoppingListFragment"
         android:label="Shopping List">
-
         <action
             android:id="@+id/action_shoppingListFragment_to_shoppingItemsFragment"
             app:destination="@id/shoppingItemsFragment">
-
             <argument
                 android:name="listId"
-                app:argType="string"/>
-
+                app:argType="string" />
             <argument
                 android:name="listName"
-                app:argType="string"/>
-
+                app:argType="string" />
         </action>
-
+        <action
+            android:id="@+id/action_shoppingListFragment_to_participantsFragment"
+            app:destination="@id/participantsFragment" />
+        <action
+            android:id="@+id/action_shoppingListFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
     </fragment>
 
     <fragment
@@ -86,6 +74,56 @@
         <argument
             android:name="listName"
             app:argType="string" />
+        <action
+            android:id="@+id/action_shoppingItemsFragment_to_participantsFragment"
+            app:destination="@id/participantsFragment" />
+        <action
+            android:id="@+id/action_shoppingItemsFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/participantsFragment"
+        android:name="com.example.shoppinglist.ui.shoppinglist.fragment.ParticipantsFragment"
+        android:label="Participants">
+        <action
+            android:id="@+id/action_participantsFragment_to_shoppingItemsFragment"
+            app:destination="@id/shoppingItemsFragment">
+            <argument
+                android:name="listId"
+                app:argType="string" />
+            <argument
+                android:name="listName"
+                app:argType="string" />
+        </action>
+        <action
+            android:id="@+id/action_participantsFragment_to_profileFragment"
+            app:destination="@id/profileFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.shoppinglist.ui.profile.ProfileFragment"
+        android:label="Profile">
+        <action
+            android:id="@+id/action_profileFragment_to_loginFragment"
+            app:destination="@id/loginFragment"/>
+        <action
+            android:id="@+id/action_profileFragment_to_shoppingListFragment"
+            app:destination="@id/shoppingListFragment"/>
+        <action
+            android:id="@+id/action_profileFragment_to_shoppingItemsFragment"
+            app:destination="@id/shoppingItemsFragment">
+            <argument
+                android:name="listId"
+                app:argType="string" />
+            <argument
+                android:name="listName"
+                app:argType="string" />
+        </action>
+        <action
+            android:id="@+id/action_profileFragment_to_participantsFragment"
+            app:destination="@id/participantsFragment" />
     </fragment>
 
 </navigation>
