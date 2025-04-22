@@ -6,16 +6,21 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.shoppinglist.data.local.converters.ParticipantsConverter
 import com.example.shoppinglist.data.local.dao.ShoppingItemDao
 import com.example.shoppinglist.data.local.dao.ShoppingListDao
+import com.example.shoppinglist.data.local.dao.UserDao
 import com.example.shoppinglist.data.local.models.ShoppingItemEntity
 import com.example.shoppinglist.data.local.models.ShoppingListEntity
 import androidx.room.migration.Migration
 
-
-@Database(entities = [ShoppingListEntity::class, ShoppingItemEntity::class], version = 4, exportSchema = false)
+@Database(
+    entities = [ShoppingListEntity::class, ShoppingItemEntity::class, UserEntity::class],
+    version = 4,
+    exportSchema = false
+)
 @TypeConverters(ParticipantsConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingListDao(): ShoppingListDao
     abstract fun shoppingItemDao(): ShoppingItemDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -28,15 +33,14 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "shopping_list_db"
                 )
-                    .addMigrations(MIGRATION_3_4) // ✅ הוספת מיגרציה לגרסה 4
-                    .fallbackToDestructiveMigration() // ✅ הרס המידע במקרה של בעיה במיגרציה
+                    .addMigrations(MIGRATION_3_4)
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
             }
         }
 
-        // ✅ מיגרציה מגרסה 3 לגרסה 4 - הוספת ownerId + שינוי participants למחרוזת JSON
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE shopping_lists ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")

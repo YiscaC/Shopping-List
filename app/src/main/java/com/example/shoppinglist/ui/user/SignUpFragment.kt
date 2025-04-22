@@ -86,7 +86,7 @@ class SignUpFragment : Fragment() {
         viewModel.signUpSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
                 Toast.makeText(requireContext(), "User registered successfully", Toast.LENGTH_SHORT).show()
-                findNavController().navigate(R.id.action_signUpFragment_to_partnerFragment)
+                findNavController().navigate(R.id.action_signUpFragment_to_shoppingListFragment)
             }
         }
 

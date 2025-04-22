@@ -1,108 +1,80 @@
 package com.example.shoppinglist.ui.profile
 
-import android.app.Activity
 import android.app.AlertDialog
-import android.content.Intent
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import com.example.shoppinglist.R
 import com.example.shoppinglist.databinding.FragmentProfileBinding
 import com.example.shoppinglist.viewmodel.ProfileViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.squareup.picasso.Picasso
 import java.io.File
 
 class ProfileFragment : Fragment() {
 
-
     private lateinit var binding: FragmentProfileBinding
     private val viewModel: ProfileViewModel by viewModels()
-    private lateinit var progressBar: ProgressBar
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentProfileBinding.inflate(inflater, container, false)
-        progressBar = binding.progressBar
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
         viewModel.loadUserData()
 
-        binding.cameraIcon.setOnClickListener { selectImage() }
-        binding.btnSave.setOnClickListener { saveUserData() }
-        binding.btnDeleteAccount.setOnClickListener { showDeleteConfirmationDialog() }
+        viewModel.username.observe(viewLifecycleOwner) { name ->
+            binding.helloUsernameText.text = "שלום, ${name}!"
+        }
 
-        viewModel.username.observe(viewLifecycleOwner, Observer {
-            binding.usernameEditText.setText(it)
-        })
-
-        viewModel.profileImageUrl.observe(viewLifecycleOwner, Observer { imagePath ->
-            if (!imagePath.isNullOrEmpty() && File(imagePath).exists()) {
-                Picasso.get().load(File(imagePath)).into(binding.profileImage)
+        viewModel.profileImageUrl.observe(viewLifecycleOwner) { url ->
+            if (!url.isNullOrEmpty()) {
+                val file = File(url)
+                binding.profileImage.setImageDrawable(null)
+                if (file.exists()) {
+                    Picasso.get().load(file).into(binding.profileImage)
+                } else {
+                    Picasso.get().load(url).into(binding.profileImage) // אולי זה URL מ-Firebase
+                }
             } else {
                 binding.profileImage.setImageResource(R.drawable.default_profile)
             }
-        })
+        }
 
-        viewModel.updateSuccess.observe(viewLifecycleOwner, Observer { success ->
-            if (success) showToast("Profile updated successfully!")
-            else showToast("Failed to update profile")
-        })
+        binding.btnEditProfile.setOnClickListener {
+            findNavController().navigate(R.id.action_profileFragment_to_editProfileFragment)
+        }
 
-        viewModel.deleteSuccess.observe(viewLifecycleOwner, Observer { success ->
-            if (success) findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
-            else showToast("Failed to delete account")
-        })
-    }
+        binding.btnLogout.setOnClickListener {
+            FirebaseAuth.getInstance().signOut()
+            findNavController().navigate(R.id.loginFragment)
+        }
 
-    private fun selectImage() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        imagePickerLauncher.launch(intent)
-    }
+        binding.btnDeleteAccount.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle("מחיקת משתמש")
+                .setMessage("האם את בטוחה שברצונך למחוק את המשתמש?")
+                .setPositiveButton("מחק") { _, _ ->
+                    viewModel.deleteUserAccount()
+                }
+                .setNegativeButton("ביטול", null)
+                .show()
+        }
 
-    private val imagePickerLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri = result.data?.data
-            if (uri != null) {
-                viewModel.saveProfileImage(uri)
+        viewModel.deleteSuccess.observe(viewLifecycleOwner) { success ->
+            if (success) {
+                findNavController().navigate(R.id.loginFragment)
+            } else {
+                Toast.makeText(requireContext(), "מחיקה נכשלה", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun saveUserData() {
-        val newUsername = binding.usernameEditText.text.toString().trim()
-        if (newUsername.isNotEmpty()) {
-            viewModel.updateUsername(newUsername)
-        } else {
-            showToast("No changes to update")
-        }
-    }
-
-    private fun showDeleteConfirmationDialog() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Delete Account")
-            .setMessage("Are you sure you want to delete your account? This action cannot be undone.")
-            .setPositiveButton("Delete") { _, _ -> viewModel.deleteUserAccount() }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showToast(message: String) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 }

@@ -1,92 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="16dp"
-    tools:context="ProfileFragment">
+    android:padding="24dp"
+    android:fillViewport="true">
 
-    <!-- תמונת פרופיל עגולה -->
-    <FrameLayout
-        android:layout_width="120dp"
-        android:layout_height="120dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
+        <!-- תמונת פרופיל מוגדלת -->
         <ImageView
             android:id="@+id/profileImage"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_marginBottom="16dp"
             android:src="@drawable/default_profile"
             android:background="@drawable/circle_background"
             android:clipToOutline="true"
-            android:scaleType="centerCrop"/>
+            android:scaleType="centerCrop" />
 
-        <ImageView
-            android:id="@+id/cameraIcon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="bottom|end"
-            android:background="@drawable/circle_background"
-            android:padding="6dp"
-            android:src="@drawable/ic_camera"/>
-    </FrameLayout>
+        <!-- טקסט "שלום, <שם משתמש>!" -->
+        <TextView
+            android:id="@+id/helloUsernameText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="שלום,!"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
 
-    <!-- ProgressBar לטעינה -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:layout_marginTop="8dp"/>
+        <!-- כפתור עריכת פרופיל -->
 
-    <!-- טקסט שמציג את כתובת המייל -->
-    <TextView
-        android:id="@+id/emailTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="user@example.com"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:paddingTop="16dp"/>
+        <!-- כפתור יציאה -->
 
-    <!-- שדה שם משתמש -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:boxStrokeColor="@color/black">
+        <!-- כפתור מחיקת חשבון -->
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/usernameEditText"
+        <Button
+            android:id="@+id/btnEditProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter your username"
-            android:inputType="textPersonName"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="@color/green"
+            android:drawableStart="@drawable/user_edit"
+            android:drawablePadding="10dp"
+            android:text="עריכת פרופיל"
+            android:textColor="@android:color/white" />
 
-    <!-- כפתור שמירה -->
-    <Button
-        android:id="@+id/btnSave"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="שמור שינויים"
-        android:backgroundTint="@color/green"
-        android:textColor="@android:color/white"
-        android:layout_marginTop="12dp"
-        android:elevation="4dp"/>
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="@color/green"
+            android:drawableStart="@drawable/ic_logout"
+            android:drawablePadding="10dp"
+            android:text="התנתקות"
+            android:textColor="@android:color/white" />
 
-    <!-- כפתור מחיקת משתמש -->
-    <Button
-        android:id="@+id/btnDeleteAccount"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="מחק חשבון"
-        android:backgroundTint="@color/green"
-        android:textColor="@android:color/white"
-        android:layout_marginTop="8dp"
-        android:elevation="4dp"/>
+        <Button
+            android:id="@+id/btnDeleteAccount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="מחק חשבון"
+            android:drawableStart="@drawable/ic_delete"
+            android:drawablePadding="10dp"
+            android:backgroundTint="@color/green"
+            android:textColor="@android:color/white" />
 
-</LinearLayout>
+        <!-- ProgressBar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</ScrollView>

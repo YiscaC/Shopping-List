@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     app:startDestination="@id/loginFragment">
 
     <fragment
@@ -8,8 +9,8 @@
         android:name="com.example.shoppinglist.ui.login.LoginFragment"
         android:label="Login">
         <action
-            android:id="@+id/action_loginFragment_to_partnerFragment"
-            app:destination="@id/partnerFragment"/>
+            android:id="@+id/action_loginFragment_to_shoppingListFragment"
+            app:destination="@id/shoppingListFragment"/>
         <action
             android:id="@+id/action_loginFragment_to_signUpFragment"
             app:destination="@id/signUpFragment"/>
@@ -20,26 +21,11 @@
         android:name="com.example.shoppinglist.ui.signup.SignUpFragment"
         android:label="Sign Up">
         <action
-            android:id="@+id/action_signUpFragment_to_partnerFragment"
-            app:destination="@id/partnerFragment"/>
+            android:id="@+id/action_signUpFragment_to_shoppingListFragment"
+            app:destination="@id/shoppingListFragment"/>
         <action
             android:id="@+id/action_signUpFragment_to_loginFragment"
             app:destination="@id/loginFragment"/>
-    </fragment>
-
-    <fragment
-        android:id="@+id/partnerFragment"
-        android:name="com.example.shoppinglist.PartnerFragment"
-        android:label="Partner">
-        <action
-            android:id="@+id/action_partnerFragment_to_shoppingListFragment"
-            app:destination="@id/shoppingListFragment"/>
-        <action
-            android:id="@+id/action_partnerFragment_to_loginFragment"
-            app:destination="@id/loginFragment"/>
-        <action
-            android:id="@+id/action_partnerFragment_to_profileFragment"
-            app:destination="@id/profileFragment"/>
     </fragment>
 
     <fragment
@@ -124,6 +110,16 @@
         <action
             android:id="@+id/action_profileFragment_to_participantsFragment"
             app:destination="@id/participantsFragment" />
+        <!-- ✅ כאן הוספנו את המסך החדש לעריכת פרופיל -->
+        <action
+            android:id="@+id/action_profileFragment_to_editProfileFragment"
+            app:destination="@id/editProfileFragment" />
     </fragment>
 
+    <!-- ✅ הוספה של EditProfileFragment -->
+    <fragment
+        android:id="@+id/editProfileFragment"
+        android:name="com.example.shoppinglist.ui.user.EditProfileFragment"
+        android:label="Edit Profile"
+        tools:layout="@layout/fragment_edit_profile" />
 </navigation>

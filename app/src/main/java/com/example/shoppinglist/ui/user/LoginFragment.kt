@@ -80,7 +80,7 @@ class LoginFragment : Fragment() {
         viewModel.loginResult.observe(viewLifecycleOwner) { success ->
             if (success) {
                 Toast.makeText(requireContext(), "Login successful", Toast.LENGTH_SHORT).show()
-                findNavController().navigate(R.id.action_loginFragment_to_partnerFragment)
+                findNavController().navigate(R.id.action_loginFragment_to_shoppingListFragment)
             }
         }
 

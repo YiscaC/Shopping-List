@@ -18,6 +18,8 @@ class MainActivity : AppCompatActivity() {
     var activeListId: String? = null
     var activeListName: String? = null
 
+    private var navigatedOnStart = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -33,7 +35,6 @@ class MainActivity : AppCompatActivity() {
 
         val bottomNavView = findViewById<BottomNavigationView>(R.id.bottom_nav_view)
 
-        // ✅ תפריט משתנה לפי היעד הנוכחי
         navController.addOnDestinationChangedListener { _, destination, _ ->
             bottomNavView.menu.clear()
 
@@ -46,7 +47,7 @@ class MainActivity : AppCompatActivity() {
                     bottomNavView.menu.findItem(R.id.profileFragment).isVisible = false
                 }
 
-                R.id.shoppingListFragment, R.id.profileFragment, R.id.partnerFragment -> {
+                R.id.shoppingListFragment, R.id.profileFragment -> {
                     bottomNavView.inflateMenu(R.menu.bottom_nav)
                     bottomNavView.menu.findItem(R.id.shoppingListFragment).isVisible = true
                     bottomNavView.menu.findItem(R.id.profileFragment).isVisible = true
@@ -65,12 +66,9 @@ class MainActivity : AppCompatActivity() {
             }
 
             bottomNavView.visibility = View.VISIBLE
-
-            // ✅ סימון ידני של הפריט הפעיל
             markMenuItemAsSelected(bottomNavView, destination.id)
         }
 
-        // ✅ ניווט כולל סימון ידני לאחר SafeArgs
         bottomNavView.setOnItemSelectedListener { item ->
             val navController = findNavController(R.id.nav_host_fragment)
             if (item.itemId == navController.currentDestination?.id) {
@@ -108,8 +106,9 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         val user = auth.currentUser
-        if (user != null) {
-            findNavController(R.id.nav_host_fragment).navigate(R.id.partnerFragment)
+        if (user != null && !navigatedOnStart) {
+            findNavController(R.id.nav_host_fragment).navigate(R.id.shoppingListFragment)
+            navigatedOnStart = true
         }
     }
 
@@ -118,7 +117,6 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
-    // ✅ סימון ידני של הפריט הפעיל בתפריט – עם תיקון post
     private fun markMenuItemAsSelected(bottomNavView: BottomNavigationView, destinationId: Int) {
         bottomNavView.post {
             val item = bottomNavView.menu.findItem(destinationId)

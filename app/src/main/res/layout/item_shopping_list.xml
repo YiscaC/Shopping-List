@@ -1,51 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:layout_margin="8dp"
+    card_view:cardCornerRadius="16dp"
+    card_view:cardElevation="6dp">
 
-    <!-- שם הרשימה -->
-    <TextView
-        android:id="@+id/listName"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:text="Shopping List Name"/>
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layoutDirection="rtl"> <!-- כיוון לעברית -->
 
-    <!-- אזור הצגת המשתתפים + כפתור הוספה -->
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:scrollbars="none">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
+        <!-- שם הרשימה -->
+        <TextView
+            android:id="@+id/listName"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:text="שם הרשימה"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textAlignment="viewStart"
+            android:textColor="#000000" />
 
-            <!-- קונטיינר למשתתפים -->
-            <LinearLayout
-                android:id="@+id/participantsContainer"
-                android:layout_width="wrap_content"
+        <!-- משתתפים + כפתור הוספה -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:gravity="start|center_vertical">
+
+            <!-- Scroll אופקי של תמונות המשתתפים -->
+            <HorizontalScrollView
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"/>
+                android:layout_weight="1"
+                android:scrollbars="none">
 
-            <!-- כפתור הוספת משתתף -->
-            <ImageButton
+                <LinearLayout
+                    android:id="@+id/participantsContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical" />
+            </HorizontalScrollView>
+
+            <!-- כפתור הוספה -->
+            <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/btnAddParticipant"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:background="@android:color/transparent"
-                android:src="@android:drawable/ic_input_add"
-                android:contentDescription="Add Participant"/>
+                android:layout_marginStart="12dp"
+                android:background="@drawable/rounded_add_button"
+                android:padding="8dp"
+                android:src="@drawable/ic_add"
+                android:contentDescription="@null" />
         </LinearLayout>
 
-    </HorizontalScrollView>
-
-</LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

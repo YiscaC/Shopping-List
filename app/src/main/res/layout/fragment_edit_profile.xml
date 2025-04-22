@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- תמונת פרופיל -->
+        <ImageView
+            android:id="@+id/profileImage"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_marginBottom="8dp"
+            android:src="@drawable/default_profile"
+            android:background="@drawable/circle_background"
+            android:clipToOutline="true"
+            android:scaleType="centerCrop" />
+
+        <!-- מצלמה וגלריה -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="24dp">
+
+            <ImageButton
+                android:id="@+id/btnCamera"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/square_background"
+                android:padding="10dp"
+                android:src="@drawable/ic_camera"
+                android:contentDescription="מצלמה" />
+
+            <ImageButton
+                android:id="@+id/btnGallery"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/square_background"
+                android:padding="10dp"
+                android:src="@drawable/ic_gallery"
+                android:contentDescription="גלריה" />
+        </LinearLayout>
+
+        <!-- אימייל - ללא כפתור עריכה -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="אימייל"
+                android:enabled="false"
+                android:textColor="@android:color/black"
+                android:drawableEnd="@drawable/ic_email"
+                android:drawablePadding="8dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- שם משתמש -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="שם משתמש"
+                android:textColor="@android:color/black"
+                android:drawableStart="@drawable/ic_edit"
+                android:drawableEnd="@drawable/ic_user"
+                android:drawablePadding="8dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- שם פרטי -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editFirstName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="שם מלא"
+                android:textColor="@android:color/black"
+                android:drawableStart="@drawable/ic_edit"
+                android:drawableEnd="@drawable/ic_user"
+                android:drawablePadding="8dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- מספר טלפון -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="מספר טלפון"
+                android:inputType="phone"
+                android:textColor="@android:color/black"
+                android:drawableStart="@drawable/ic_edit"
+                android:drawableEnd="@drawable/ic_phone"
+                android:drawablePadding="8dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- סיסמה -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="סיסמה חדשה"
+                android:inputType="textPassword"
+                android:textColor="@android:color/black"
+                android:drawableStart="@drawable/ic_edit"
+                android:drawableEnd="@drawable/ic_password"
+
+                android:drawablePadding="8dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- כפתור שמירה -->
+        <Button
+            android:id="@+id/btnSaveEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="שמור שינויים"
+            android:backgroundTint="@color/green"
+            android:textColor="@android:color/white" />
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"/>
+
+    </LinearLayout>
+
+</ScrollView>
