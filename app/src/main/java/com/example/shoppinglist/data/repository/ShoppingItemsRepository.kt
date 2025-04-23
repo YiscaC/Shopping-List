@@ -16,7 +16,7 @@ class ShoppingItemsRepository(context: Context) {
 
     private val db: DatabaseReference = FirebaseDatabase.getInstance().reference.child("shoppingLists")
     private val shoppingItemDao = AppDatabase.getDatabase(context).shoppingItemDao()
-    private val shoppingListDao: ShoppingListDao = AppDatabase.getDatabase(context).shoppingListDao() // ✅ הוספת אתחול ל-shoppingListDao
+    private val shoppingListDao: ShoppingListDao = AppDatabase.getDatabase(context).shoppingListDao()
 
     fun getShoppingItems(listId: String): LiveData<List<ShoppingItemEntity>> {
         return shoppingItemDao.getItemsByListId(listId)
@@ -29,7 +29,17 @@ class ShoppingItemsRepository(context: Context) {
                 for (itemSnapshot in snapshot.children) {
                     val item = itemSnapshot.getValue(ShoppingItem::class.java)
                     item?.let {
-                        items.add(ShoppingItemEntity(it.id, listId, it.name, it.quantity, it.purchased, it.imageUrl))
+                        items.add(
+                            ShoppingItemEntity(
+                                it.id,
+                                listId,
+                                it.name,
+                                it.quantity,
+                                it.purchased,
+                                it.imageUrl,
+                                it.order
+                            )
+                        )
                     }
                 }
                 CoroutineScope(Dispatchers.IO).launch {
@@ -51,9 +61,14 @@ class ShoppingItemsRepository(context: Context) {
         shoppingItemDao.updateItemQuantity(itemId, newQuantity)
     }
 
+    suspend fun updateItemOrder(listId: String, itemId: String, newOrder: Int) {
+        db.child(listId).child("items").child(itemId).child("order").setValue(newOrder)
+        shoppingItemDao.updateItemOrder(itemId, newOrder)
+    }
+
     suspend fun addItemToFirebase(listId: String, itemName: String) {
         val newItemId = db.child(listId).child("items").push().key ?: return
-        val newItem = ShoppingItemEntity(newItemId, listId, itemName, 1, false, null)
+        val newItem = ShoppingItemEntity(newItemId, listId, itemName, 1, false, null, order = 0)
 
         db.child(listId).child("items").child(newItemId).setValue(newItem)
         withContext(Dispatchers.IO) {
@@ -79,4 +94,9 @@ class ShoppingItemsRepository(context: Context) {
             db.child("shoppingLists").child(listId).child("participants").child(participantName).setValue(true)
         }
     }
+    suspend fun deleteItem(listId: String, itemId: String) {
+        db.child(listId).child("items").child(itemId).removeValue()
+        shoppingItemDao.deleteById(itemId)
+    }
+
 }

@@ -23,4 +23,11 @@ interface ShoppingItemDao {
 
     @Query("UPDATE shopping_items SET imageUrl = :imageUrl WHERE id = :itemId")
     suspend fun updateItemImage(itemId: String, imageUrl: String)
+
+    @Query("UPDATE shopping_items SET `order` = :newOrder WHERE id = :itemId")
+    suspend fun updateItemOrder(itemId: String, newOrder: Int)
+
+    @Query("DELETE FROM shopping_items WHERE id = :itemId")
+    suspend fun deleteById(itemId: String)
+
 }

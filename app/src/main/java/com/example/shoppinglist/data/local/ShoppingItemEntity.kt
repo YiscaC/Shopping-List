@@ -10,10 +10,11 @@ data class ShoppingItemEntity(
     val name: String,
     val quantity: Int,
     val purchased: Boolean,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val order: Int = 0 // ✅ שדה חדש לציון סדר הפריטים
 ) {
     // ✅ פונקציה להמרה ל-`ShoppingItem`
     fun toShoppingItem(): ShoppingItem {
-        return ShoppingItem(id, name, quantity, purchased, imageUrl, expanded = false)
+        return ShoppingItem(id, name, quantity, purchased, imageUrl, expanded = false, order = order)
     }
 }

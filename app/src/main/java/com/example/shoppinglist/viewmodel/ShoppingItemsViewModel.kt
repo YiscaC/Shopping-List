@@ -39,6 +39,12 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun updateItemOrder(itemId: String, newOrder: Int) {
+        viewModelScope.launch {
+            repository.updateItemOrder(listId, itemId, newOrder)
+        }
+    }
+
     fun addItemToFirebase(itemName: String) {
         viewModelScope.launch {
             repository.addItemToFirebase(listId, itemName)
@@ -82,4 +88,10 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
             Log.e("Firebase", "Error uploading image: ${it.message}")
         }
     }
+    fun deleteItem(itemId: String) {
+        viewModelScope.launch {
+            repository.deleteItem(listId, itemId)
+        }
+    }
+
 }

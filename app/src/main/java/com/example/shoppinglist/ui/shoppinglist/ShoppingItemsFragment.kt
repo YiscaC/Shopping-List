@@ -6,6 +6,8 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -19,8 +21,11 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.MainActivity
+import com.example.shoppinglist.R
 import com.example.shoppinglist.databinding.FragmentShoppingItemsBinding
 import com.example.shoppinglist.ui.adapter.ShoppingItemsAdapter
 import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
@@ -44,10 +49,8 @@ class ShoppingItemsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // ✅ הגדרת ה־listId ב־ViewModel
         viewModel.setListId(args.listId)
 
-        // ✅ שמירה ב־MainActivity עבור ניווט מהיר
         (activity as? MainActivity)?.apply {
             activeListId = args.listId
             activeListName = args.listName
@@ -63,6 +66,14 @@ class ShoppingItemsFragment : Fragment() {
             },
             onPurchasedChanged = { selectedItem, isChecked ->
                 viewModel.updateItemPurchased(selectedItem.id, isChecked)
+                val newList = adapter.currentItems().toMutableList().apply {
+                    remove(selectedItem)
+                    if (isChecked) add(selectedItem) else add(0, selectedItem)
+                }
+                adapter.updateItems(newList)
+                newList.forEachIndexed { index, item ->
+                    viewModel.updateItemOrder(item.id, index)
+                }
             },
             onQuantityChanged = { selectedItem, newQuantity ->
                 viewModel.updateItemQuantity(selectedItem.id, newQuantity)
@@ -77,18 +88,101 @@ class ShoppingItemsFragment : Fragment() {
             onGallerySelected = { selectedItem ->
                 currentItemId = selectedItem.id
                 openGallery()
+            },
+            onItemDeleted = { selectedItem ->
+                viewModel.deleteItem(selectedItem.id)
             }
         )
 
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.setHasFixedSize(false)
         binding.recyclerView.adapter = adapter
+
+        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val fromPos = viewHolder.adapterPosition
+                val toPos = target.adapterPosition
+                if (fromPos == RecyclerView.NO_POSITION || toPos == RecyclerView.NO_POSITION) return false
+                adapter.swapItems(fromPos, toPos)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val item = adapter.currentItems()[position]
+
+                AlertDialog.Builder(requireContext())
+                    .setTitle("מחיקת מוצר")
+                    .setMessage("האם את/ה בטוח/ה שברצונך למחוק את '${item.name}'?")
+                    .setPositiveButton("מחק") { _, _ ->
+                        viewModel.deleteItem(item.id)
+                    }
+                    .setNegativeButton("ביטול") { dialog, _ ->
+                        dialog.dismiss()
+                        adapter.notifyItemChanged(position)
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+
+            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(recyclerView, viewHolder)
+                adapter.currentItems().forEachIndexed { index, item ->
+                    viewModel.updateItemOrder(item.id, index)
+                }
+            }
+
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                    val itemView = viewHolder.itemView
+                    val paint = Paint().apply {
+                        color = ContextCompat.getColor(requireContext(), android.R.color.holo_red_light)
+                    }
+
+                    c.drawRect(
+                        itemView.right + dX, itemView.top.toFloat(),
+                        itemView.right.toFloat(), itemView.bottom.toFloat(), paint
+                    )
+
+                    val icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_delete)
+                    icon?.let {
+                        val iconMargin = (itemView.height - it.intrinsicHeight) / 2
+                        val iconTop = itemView.top + iconMargin
+                        val iconLeft = itemView.right - iconMargin - it.intrinsicWidth
+                        val iconRight = itemView.right - iconMargin
+                        val iconBottom = iconTop + it.intrinsicHeight
+
+                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                        it.draw(c)
+                    }
+                }
+            }
+        })
+        itemTouchHelper.attachToRecyclerView(binding.recyclerView)
 
         binding.btnAddItem.setOnClickListener {
             showAddItemDialog()
         }
 
         viewModel.itemsList.observe(viewLifecycleOwner) { items ->
-            adapter.updateItems(items.map { it.toShoppingItem() })
+            val sorted = items.map { it.toShoppingItem() }.sortedBy { it.order }
+            adapter.updateItems(sorted)
         }
     }
 

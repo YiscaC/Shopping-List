@@ -9,9 +9,12 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.R
 import com.example.shoppinglist.data.local.models.ShoppingList
+import com.google.android.material.imageview.ShapeableImageView
+import com.squareup.picasso.Picasso
 
 class ShoppingListAdapter(
     private var shoppingLists: List<ShoppingList>,
+    private var participantImages: Map<String, String>,
     private val onItemClick: (ShoppingList) -> Unit,
     private val onAddParticipantClick: (ShoppingList) -> Unit
 ) : RecyclerView.Adapter<ShoppingListAdapter.ShoppingListViewHolder>() {
@@ -30,7 +33,10 @@ class ShoppingListAdapter(
             }
 
             btnAddParticipant.setOnClickListener {
-                onAddParticipantClick(shoppingLists[adapterPosition])
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    onAddParticipantClick(shoppingLists[position])
+                }
             }
         }
     }
@@ -45,24 +51,34 @@ class ShoppingListAdapter(
         val shoppingList = shoppingLists[position]
         holder.name.text = shoppingList.name
 
-        // ניקוי משתתפים קודמים
+        // ניקוי המשתתפים הקודמים
         holder.participantsContainer.removeAllViews()
 
-        // הצגת המשתתפים
-        shoppingList.participants.keys.forEach { participant ->
-            val textView = TextView(holder.itemView.context).apply {
-                text = participant.first().toString() // הצגת האות הראשונה
-                setPadding(8, 8, 8, 8)
-                setBackgroundResource(R.drawable.circle_background)
+        // הצגת תמונות משתתפים לפי UID
+        shoppingList.participants.keys.forEach { participantUid ->
+            val imageView = ShapeableImageView(holder.itemView.context).apply {
+                layoutParams = LinearLayout.LayoutParams(100, 100).apply {
+                    setMargins(8, 8, 8, 8)
+                }
+                // ברירת מחדל לתמונה דיפולטית
+                setImageResource(R.drawable.default_profile)
             }
-            holder.participantsContainer.addView(textView)
+
+            // אם יש תמונה למשתמש – נטען אותה
+            val imageUrl = participantImages[participantUid]
+            if (!imageUrl.isNullOrEmpty()) {
+                Picasso.get().load(imageUrl).placeholder(R.drawable.default_profile).into(imageView)
+            }
+
+            holder.participantsContainer.addView(imageView)
         }
     }
 
     override fun getItemCount(): Int = shoppingLists.size
 
-    fun updateLists(newLists: List<ShoppingList>) {
+    fun updateLists(newLists: List<ShoppingList>, newImages: Map<String, String>) {
         shoppingLists = newLists
+        participantImages = newImages
         notifyDataSetChanged()
     }
 }
