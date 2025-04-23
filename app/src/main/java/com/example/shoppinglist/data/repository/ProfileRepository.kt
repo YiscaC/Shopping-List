@@ -23,37 +23,28 @@ class ProfileRepository(private val context: Context) {
 
     fun getCurrentUser() = auth.currentUser
 
-    private fun getEmailKey(): String? {
-        val email = auth.currentUser?.email ?: return null
-        return email.replace(".", ",")
-    }
-
     suspend fun getLocalUser(uid: String): UserEntity? {
         return withContext(Dispatchers.IO) {
             roomDb.userDao().getUserById(uid)
         }
     }
 
+    suspend fun insertUser(user: UserEntity) {
+        withContext(Dispatchers.IO) {
+            roomDb.userDao().insertUser(user)
+        }
+    }
+
     fun getUserData(callback: (String?, String?, String?, String?) -> Unit) {
-        val user = auth.currentUser ?: return
-        val emailKey = user.email?.replace(".", ",") ?: return
-        val uid = user.uid
+        val uid = auth.currentUser?.uid ?: return
 
-        db.getReference("users").child(emailKey).get()
-            .addOnSuccessListener { emailSnapshot ->
-                val username = emailSnapshot.child("username").value as? String
-                val firstName = emailSnapshot.child("firstName").value as? String
-                val phone = emailSnapshot.child("phone").value as? String
-
-                db.getReference("users").child(uid).get()
-                    .addOnSuccessListener { uidSnapshot ->
-                        val profileImageUrl = uidSnapshot.child("profileImageUrl").value as? String
-                        callback(username, firstName, phone, profileImageUrl)
-                    }
-                    .addOnFailureListener {
-                        Log.e("ProfileRepository", "Failed to load image", it)
-                        callback(username, firstName, phone, null)
-                    }
+        db.getReference("users").child(uid).get()
+            .addOnSuccessListener { snapshot ->
+                val username = snapshot.child("username").value as? String
+                val firstName = snapshot.child("firstName").value as? String
+                val phone = snapshot.child("phone").value as? String
+                val profileImageUrl = snapshot.child("profileImageUrl").value as? String
+                callback(username, firstName, phone, profileImageUrl)
             }
             .addOnFailureListener {
                 Log.e("ProfileRepository", "Failed to load user info", it)
@@ -62,7 +53,7 @@ class ProfileRepository(private val context: Context) {
     }
 
     fun updateProfile(username: String, firstName: String, phone: String, callback: (Boolean) -> Unit) {
-        val emailKey = getEmailKey() ?: return
+        val uid = auth.currentUser?.uid ?: return
 
         val userMap = mapOf(
             "username" to username,
@@ -70,38 +61,37 @@ class ProfileRepository(private val context: Context) {
             "phone" to phone
         )
 
-        db.getReference("users").child(emailKey).updateChildren(userMap)
+        db.getReference("users").child(uid).updateChildren(userMap)
             .addOnSuccessListener { callback(true) }
             .addOnFailureListener { callback(false) }
     }
 
     fun updateUsername(newUsername: String, callback: (Boolean) -> Unit) {
-        val emailKey = getEmailKey() ?: return
+        val uid = auth.currentUser?.uid ?: return
 
-        db.getReference("users").child(emailKey).child("username").setValue(newUsername)
+        db.getReference("users").child(uid).child("username").setValue(newUsername)
             .addOnSuccessListener { callback(true) }
             .addOnFailureListener { callback(false) }
     }
 
     fun updateFirstName(firstName: String, callback: (Boolean) -> Unit) {
-        val emailKey = getEmailKey() ?: return
+        val uid = auth.currentUser?.uid ?: return
 
-        db.getReference("users").child(emailKey).child("firstName").setValue(firstName)
+        db.getReference("users").child(uid).child("firstName").setValue(firstName)
             .addOnSuccessListener { callback(true) }
             .addOnFailureListener { callback(false) }
     }
 
     fun updatePhone(phone: String, callback: (Boolean) -> Unit) {
-        val emailKey = getEmailKey() ?: return
+        val uid = auth.currentUser?.uid ?: return
 
-        db.getReference("users").child(emailKey).child("phone").setValue(phone)
+        db.getReference("users").child(uid).child("phone").setValue(phone)
             .addOnSuccessListener { callback(true) }
             .addOnFailureListener { callback(false) }
     }
 
     fun saveProfileImage(uri: Uri, callback: (Boolean, String?) -> Unit) {
-        val user = auth.currentUser ?: return
-        val uid = user.uid
+        val uid = auth.currentUser?.uid ?: return
 
         val storageRef = FirebaseStorage.getInstance().reference
             .child("profile_images/${uid}.jpg")
@@ -111,7 +101,20 @@ class ProfileRepository(private val context: Context) {
                 storageRef.downloadUrl.addOnSuccessListener { downloadUri ->
                     val imageUrl = downloadUri.toString()
                     db.getReference("users").child(uid).child("profileImageUrl").setValue(imageUrl)
-                        .addOnSuccessListener { callback(true, imageUrl) }
+                        .addOnSuccessListener {
+                            GlobalScope.launch(Dispatchers.IO) {
+                                val localUser = getLocalUser(uid)
+                                val updatedUser = UserEntity(
+                                    uid = uid,
+                                    username = localUser?.username.orEmpty(),
+                                    firstName = localUser?.firstName.orEmpty(),
+                                    phone = localUser?.phone.orEmpty(),
+                                    localProfileImagePath = imageUrl
+                                )
+                                insertUser(updatedUser)
+                            }
+                            callback(true, imageUrl)
+                        }
                         .addOnFailureListener { callback(false, null) }
                 }
             }
@@ -122,8 +125,7 @@ class ProfileRepository(private val context: Context) {
     }
 
     fun saveProfileImage(bytes: ByteArray, callback: (Boolean, String?) -> Unit) {
-        val user = auth.currentUser ?: return
-        val uid = user.uid
+        val uid = auth.currentUser?.uid ?: return
 
         val storageRef = FirebaseStorage.getInstance().reference
             .child("profile_images/${uid}.jpg")
@@ -134,21 +136,18 @@ class ProfileRepository(private val context: Context) {
                     val imageUrl = downloadUri.toString()
                     db.getReference("users").child(uid).child("profileImageUrl").setValue(imageUrl)
                         .addOnSuccessListener {
-                            db.getReference("users").child(uid).get().addOnSuccessListener { snapshot ->
-                                val username = snapshot.child("username").value as? String ?: ""
-                                val firstName = snapshot.child("firstName").value as? String ?: ""
-                                val phone = snapshot.child("phone").value as? String ?: ""
-
-                                val localPath = saveImageLocally(bytes, uid)
-                                val userEntity = UserEntity(uid, username, firstName, phone, localPath)
-                                GlobalScope.launch(Dispatchers.IO) {
-                                    roomDb.userDao().insertUser(userEntity)
-                                }
-
-                                callback(true, imageUrl)
-                            }.addOnFailureListener {
-                                callback(true, imageUrl)
+                            GlobalScope.launch(Dispatchers.IO) {
+                                val localUser = getLocalUser(uid)
+                                val updatedUser = UserEntity(
+                                    uid = uid,
+                                    username = localUser?.username.orEmpty(),
+                                    firstName = localUser?.firstName.orEmpty(),
+                                    phone = localUser?.phone.orEmpty(),
+                                    localProfileImagePath = imageUrl
+                                )
+                                insertUser(updatedUser)
                             }
+                            callback(true, imageUrl)
                         }
                         .addOnFailureListener { callback(false, null) }
                 }
@@ -159,21 +158,11 @@ class ProfileRepository(private val context: Context) {
             }
     }
 
-    private fun saveImageLocally(bytes: ByteArray, uid: String): String {
-        val file = File(context.filesDir, "profile_$uid.jpg")
-        val outputStream = FileOutputStream(file)
-        outputStream.write(bytes)
-        outputStream.flush()
-        outputStream.close()
-        return file.absolutePath
-    }
-
     fun deleteUserAccount(callback: (Boolean) -> Unit) {
         val user = auth.currentUser ?: return
-        val emailKey = getEmailKey() ?: return
+        val uid = user.uid
 
-        db.getReference("users").child(emailKey).removeValue()
-        db.getReference("users").child(user.uid).removeValue()
+        db.getReference("users").child(uid).removeValue()
         user.delete()
             .addOnSuccessListener { callback(true) }
             .addOnFailureListener { callback(false) }

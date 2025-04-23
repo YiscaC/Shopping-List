@@ -51,16 +51,16 @@ class SignUpRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val sanitizedEmail = email.replace(".", ",") // 🚀 מחליפים נקודה בפסיק כדי למנוע בעיות ב-Firebase Realtime Database
         val user = mapOf(
             "userId" to userId,
             "username" to username,
-            "email" to email
+            "email" to email,
+            "profileImageUrl" to "" // אפשר לעדכן את זה אחרי בחירת תמונה
         )
 
-        Log.d("SignUpRepository", "💾 Saving user to Firebase Realtime Database: $sanitizedEmail")
+        Log.d("SignUpRepository", "💾 Saving user to Firebase Realtime Database with UID: $userId")
 
-        realtimeDb.child("users").child(sanitizedEmail).setValue(user)
+        realtimeDb.child("users").child(userId).setValue(user)
             .addOnSuccessListener {
                 Log.d("SignUpRepository", "✅ User saved successfully in Realtime Database")
                 onSuccess()

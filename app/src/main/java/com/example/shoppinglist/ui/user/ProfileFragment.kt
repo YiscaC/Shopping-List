@@ -36,13 +36,16 @@ class ProfileFragment : Fragment() {
         }
 
         viewModel.profileImageUrl.observe(viewLifecycleOwner) { url ->
+            binding.profileImage.setImageDrawable(null)
+
             if (!url.isNullOrEmpty()) {
                 val file = File(url)
-                binding.profileImage.setImageDrawable(null)
-                if (file.exists()) {
+                val isLocal = file.exists() && url.startsWith("/data")
+
+                if (isLocal) {
                     Picasso.get().load(file).into(binding.profileImage)
                 } else {
-                    Picasso.get().load(url).into(binding.profileImage) // אולי זה URL מ-Firebase
+                    Picasso.get().load(url).into(binding.profileImage)
                 }
             } else {
                 binding.profileImage.setImageResource(R.drawable.default_profile)
