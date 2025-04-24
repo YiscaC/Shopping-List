@@ -76,7 +76,24 @@
                 android:src="@drawable/ic_arrow_up"
                 android:contentDescription="הוסף כמות" />
         </LinearLayout>
-
+        <!-- רשימת הודעות -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/messagesRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginTop="8dp"
+            android:overScrollMode="never"/>
+        <!-- תמונה מוצגת -->
+        <ImageView
+            android:id="@+id/itemImage"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:scaleType="centerCrop"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            android:background="@drawable/image_placeholder"/>
         <!-- אזור תגובה בטוח עם כפתורים -->
         <LinearLayout
             android:id="@+id/commentsSection"
@@ -134,17 +151,8 @@
                     android:contentDescription="גלריה" />
 
 
+
             </LinearLayout>
         </LinearLayout>
-
-        <!-- תמונה מוצגת -->
-        <ImageView
-            android:id="@+id/itemImage"
-            android:layout_width="match_parent"
-            android:layout_height="160dp"
-            android:scaleType="centerCrop"
-            android:layout_marginTop="8dp"
-            android:visibility="gone"
-            android:background="@drawable/image_placeholder"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

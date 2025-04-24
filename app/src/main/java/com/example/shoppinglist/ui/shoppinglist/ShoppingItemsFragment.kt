@@ -79,7 +79,7 @@ class ShoppingItemsFragment : Fragment() {
                 viewModel.updateItemQuantity(selectedItem.id, newQuantity)
             },
             onCommentAdded = { selectedItem, comment ->
-                viewModel.addCommentToItem(selectedItem.id, comment)
+                viewModel.addMessageToItem(selectedItem.id, comment)
             },
             onImageAdded = { selectedItem ->
                 currentItemId = selectedItem.id
@@ -200,7 +200,7 @@ class ShoppingItemsFragment : Fragment() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) openCamera()
-        else Toast.makeText(requireContext(), "Camera permission required", Toast.LENGTH_SHORT).show()
+        else Toast.makeText(requireContext(), "יש לאשר הרשאת מצלמה", Toast.LENGTH_SHORT).show()
     }
 
     private fun openCamera() {
@@ -213,7 +213,7 @@ class ShoppingItemsFragment : Fragment() {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val imageBitmap = result.data?.extras?.get("data") as? Bitmap
-            imageBitmap?.let { uploadImageToFirebase(it) }
+            imageBitmap?.let { uploadMessageImage(it) }
         }
     }
 
@@ -224,21 +224,21 @@ class ShoppingItemsFragment : Fragment() {
     private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { uploadImageToFirebase(it) }
+        uri?.let { uploadMessageImage(it) }
     }
 
-    private fun uploadImageToFirebase(uri: Uri) {
+    private fun uploadMessageImage(uri: Uri) {
         currentItemId?.let { itemId ->
-            viewModel.uploadImageForItem(itemId, uri)
+            viewModel.uploadMessageImageFromUri(itemId, uri)
         }
     }
 
-    private fun uploadImageToFirebase(imageBitmap: Bitmap) {
+    private fun uploadMessageImage(imageBitmap: Bitmap) {
         currentItemId?.let { itemId ->
             val baos = ByteArrayOutputStream()
             imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
             val imageData = baos.toByteArray()
-            viewModel.uploadImageForItem(itemId, imageData)
+            viewModel.uploadMessageImageFromBytes(itemId, imageData)
         }
     }
 

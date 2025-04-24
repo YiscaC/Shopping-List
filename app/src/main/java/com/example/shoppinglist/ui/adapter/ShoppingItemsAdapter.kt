@@ -6,10 +6,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.R
 import com.example.shoppinglist.data.local.models.ShoppingItem
-import java.util.*
+import com.google.firebase.auth.FirebaseAuth
 
 class ShoppingItemsAdapter(
     private var items: List<ShoppingItem>,
@@ -35,6 +36,9 @@ class ShoppingItemsAdapter(
         val addImageButton: ImageButton = view.findViewById(R.id.btnAddImage)
         val selectFromGalleryButton: ImageButton = view.findViewById(R.id.btnSelectFromGallery)
         val itemImage: ImageView = view.findViewById(R.id.itemImage)
+        val messagesRecyclerView: RecyclerView = view.findViewById(R.id.messagesRecyclerView)
+
+        var messagesAdapter: MessagesAdapter? = null
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShoppingItemViewHolder {
@@ -68,8 +72,16 @@ class ShoppingItemsAdapter(
             item.expanded = !item.expanded
             holder.quantityLayout.visibility = if (item.expanded) View.VISIBLE else View.GONE
             holder.commentsSection.visibility = if (item.expanded) View.VISIBLE else View.GONE
-            holder.itemImage.visibility =
-                if (!item.imageUrl.isNullOrEmpty() && item.expanded) View.VISIBLE else View.GONE
+            holder.itemImage.visibility = View.GONE
+
+            holder.messagesRecyclerView.visibility = if (item.expanded) View.VISIBLE else View.GONE
+            if (item.expanded) {
+                holder.messagesRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
+                val adapter = MessagesAdapter(item.messages, FirebaseAuth.getInstance().currentUser?.uid ?: "")
+                holder.messagesAdapter = adapter
+                holder.messagesRecyclerView.adapter = adapter
+            }
+
             notifyItemChanged(position)
         }
 
@@ -120,8 +132,9 @@ class ShoppingItemsAdapter(
 
         holder.addImageButton.setOnClickListener { onImageAdded(item) }
         holder.selectFromGalleryButton.setOnClickListener { onGallerySelected(item) }
-        holder.itemImage.visibility =
-            if (!item.imageUrl.isNullOrEmpty()) View.VISIBLE else View.GONE
+
+        // עדכון הודעות (אם קיים adapter)
+        holder.messagesAdapter?.updateMessages(item.messages)
     }
 
     override fun getItemCount(): Int = items.size

@@ -6,11 +6,12 @@ import com.example.shoppinglist.data.local.AppDatabase
 import com.example.shoppinglist.data.local.dao.ShoppingListDao
 import com.example.shoppinglist.data.local.models.ShoppingItemEntity
 import com.example.shoppinglist.data.local.models.ShoppingItem
+import com.example.shoppinglist.data.local.models.Message
+import com.google.firebase.database.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.google.firebase.database.*
 
 class ShoppingItemsRepository(context: Context) {
 
@@ -29,15 +30,20 @@ class ShoppingItemsRepository(context: Context) {
                 for (itemSnapshot in snapshot.children) {
                     val item = itemSnapshot.getValue(ShoppingItem::class.java)
                     item?.let {
+                        val messagesSnapshot = itemSnapshot.child("messages")
+                        val messages = mutableListOf<Message>()
+                        for (msgSnapshot in messagesSnapshot.children) {
+                            msgSnapshot.getValue(Message::class.java)?.let { messages.add(it) }
+                        }
                         items.add(
                             ShoppingItemEntity(
-                                it.id,
-                                listId,
-                                it.name,
-                                it.quantity,
-                                it.purchased,
-                                it.imageUrl,
-                                it.order
+                                id = it.id,
+                                listId = listId,
+                                name = it.name,
+                                quantity = it.quantity,
+                                purchased = it.purchased,
+                                order = it.order,
+                                messages = messages
                             )
                         )
                     }
@@ -68,7 +74,7 @@ class ShoppingItemsRepository(context: Context) {
 
     suspend fun addItemToFirebase(listId: String, itemName: String) {
         val newItemId = db.child(listId).child("items").push().key ?: return
-        val newItem = ShoppingItemEntity(newItemId, listId, itemName, 1, false, null, order = 0)
+        val newItem = ShoppingItemEntity(newItemId, listId, itemName, 1, false, order = 0)
 
         db.child(listId).child("items").child(newItemId).setValue(newItem)
         withContext(Dispatchers.IO) {
@@ -76,12 +82,23 @@ class ShoppingItemsRepository(context: Context) {
         }
     }
 
-    suspend fun addCommentToItem(listId: String, itemId: String, comment: String) {
-        db.child(listId).child("items").child(itemId).child("comments").push().setValue(comment)
+    suspend fun addMessageToItem(listId: String, itemId: String, message: Message) {
+        db.child(listId).child("items").child(itemId).child("messages").push().setValue(message)
+        val current = shoppingItemDao.getItemById(itemId)
+        current?.let {
+            val updated = it.copy(messages = it.messages + message)
+            shoppingItemDao.insertItem(updated)
+        }
     }
 
-    suspend fun updateItemImage(listId: String, itemId: String, imageUrl: String) {
-        db.child(listId).child("items").child(itemId).child("imageUrl").setValue(imageUrl)
+    suspend fun uploadMessageImage(listId: String, itemId: String, senderId: String, imageUrl: String) {
+        val message = Message(
+            senderId = senderId,
+            text = null,
+            imageUrl = imageUrl,
+            timestamp = System.currentTimeMillis()
+        )
+        addMessageToItem(listId, itemId, message)
     }
 
     suspend fun addParticipant(listId: String, participantName: String) {
@@ -94,9 +111,9 @@ class ShoppingItemsRepository(context: Context) {
             db.child("shoppingLists").child(listId).child("participants").child(participantName).setValue(true)
         }
     }
+
     suspend fun deleteItem(listId: String, itemId: String) {
         db.child(listId).child("items").child(itemId).removeValue()
         shoppingItemDao.deleteById(itemId)
     }
-
 }

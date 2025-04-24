@@ -30,4 +30,8 @@ interface ShoppingItemDao {
     @Query("DELETE FROM shopping_items WHERE id = :itemId")
     suspend fun deleteById(itemId: String)
 
+    @Query("SELECT * FROM shopping_items WHERE id = :itemId")
+    suspend fun getItemById(itemId: String): ShoppingItemEntity?
+
+
 }

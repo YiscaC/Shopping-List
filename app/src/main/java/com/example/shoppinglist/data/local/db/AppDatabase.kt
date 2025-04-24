@@ -10,13 +10,15 @@ import com.example.shoppinglist.data.local.dao.UserDao
 import com.example.shoppinglist.data.local.models.ShoppingItemEntity
 import com.example.shoppinglist.data.local.models.ShoppingListEntity
 import androidx.room.migration.Migration
+import com.example.shoppinglist.data.local.converters.MessagesConverter
+
 
 @Database(
     entities = [ShoppingListEntity::class, ShoppingItemEntity::class, UserEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
-@TypeConverters(ParticipantsConverter::class)
+@TypeConverters(ParticipantsConverter::class, MessagesConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingListDao(): ShoppingListDao
     abstract fun shoppingItemDao(): ShoppingItemDao
