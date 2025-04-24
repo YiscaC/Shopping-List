@@ -14,6 +14,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var auth: FirebaseAuth
     var activeListId: String? = null
     var activeListName: String? = null
@@ -63,6 +64,7 @@ class MainActivity : AppCompatActivity() {
                 else -> {
                     bottomNavView.inflateMenu(R.menu.bottom_nav)
                 }
+
             }
 
             bottomNavView.visibility = View.VISIBLE
@@ -71,6 +73,7 @@ class MainActivity : AppCompatActivity() {
 
         bottomNavView.setOnItemSelectedListener { item ->
             val navController = findNavController(R.id.nav_host_fragment)
+
             if (item.itemId == navController.currentDestination?.id) {
                 return@setOnItemSelectedListener true
             }
@@ -82,6 +85,19 @@ class MainActivity : AppCompatActivity() {
                     if (listId != null && listName != null) {
                         val action = ShoppingListFragmentDirections
                             .actionShoppingListFragmentToShoppingItemsFragment(listId, listName)
+                        navController.navigate(action)
+                        bottomNavView.selectedItemId = item.itemId
+                    } else {
+                        Toast.makeText(this, "⚠️ אין רשימה פעילה", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+
+                R.id.participantsFragment -> {
+                    val listId = activeListId
+                    if (listId != null) {
+                        val action = ShoppingListFragmentDirections
+                            .actionShoppingListFragmentToParticipantsFragment(listId)
                         navController.navigate(action)
                         bottomNavView.selectedItemId = item.itemId
                     } else {

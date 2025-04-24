@@ -4,4 +4,5 @@ plugins {
     id("com.google.gms.google-services") version "4.3.15" apply false
     id("androidx.navigation.safeargs.kotlin") version "2.7.7" apply false // ✅ הוספת SafeArgs
 
+
 }
