@@ -90,7 +90,6 @@ class ShoppingItemsRepository(context: Context) {
             shoppingItemDao.insertItem(updated)
         }
     }
-
     suspend fun uploadMessageImage(listId: String, itemId: String, senderId: String, imageUrl: String) {
         val message = Message(
             senderId = senderId,
@@ -100,6 +99,30 @@ class ShoppingItemsRepository(context: Context) {
         )
         addMessageToItem(listId, itemId, message)
     }
+
+    suspend fun updateMessageImageUrl(listId: String, itemId: String, timestamp: Long, newUrl: String) {
+        val item = shoppingItemDao.getItemById(itemId)
+        item?.let {
+            val updatedMessages = it.messages.map { msg ->
+                if (msg.timestamp == timestamp) msg.copy(imageUrl = newUrl) else msg
+            }
+            val updatedItem = it.copy(messages = updatedMessages)
+            shoppingItemDao.insertItem(updatedItem)
+
+            val firebaseMessageRef = db.child(listId).child("items").child(itemId).child("messages")
+            firebaseMessageRef.get().addOnSuccessListener { snapshot ->
+                for (msg in snapshot.children) {
+                    val msgObj = msg.getValue(Message::class.java)
+                    if (msgObj != null && msgObj.timestamp == timestamp) {
+                        msg.ref.child("imageUrl").setValue(newUrl)
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+
 
     suspend fun addParticipant(listId: String, participantName: String) {
         withContext(Dispatchers.IO) {

@@ -35,6 +35,7 @@ class MessagesAdapter(
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
         val message = messages[position]
 
+        // טקסט
         if (!message.text.isNullOrEmpty()) {
             holder.text.visibility = View.VISIBLE
             holder.text.text = message.text
@@ -42,13 +43,29 @@ class MessagesAdapter(
             holder.text.visibility = View.GONE
         }
 
+        // תמונה
         if (!message.imageUrl.isNullOrEmpty()) {
             holder.image.visibility = View.VISIBLE
-            Picasso.get().load(message.imageUrl).into(holder.image)
+            val imageUrl = message.imageUrl
+
+            // תמונה מקומית מ־content://
+            if (imageUrl.startsWith("content://")) {
+                holder.image.setImageURI(android.net.Uri.parse(imageUrl))
+            }
+            // תמונה זמנית שנטענה מ־ByteArray
+            else if (imageUrl == "local_byte_image") {
+                // לא נטען כלום (זה רק לייצוג פנימי, כבר מוצגת מראש בפריט)
+                holder.image.visibility = View.GONE
+            }
+            // אחרת – נטען מ־Firebase
+            else {
+                Picasso.get().load(imageUrl).into(holder.image)
+            }
         } else {
             holder.image.visibility = View.GONE
         }
     }
+
 
     override fun getItemCount(): Int = messages.size
 

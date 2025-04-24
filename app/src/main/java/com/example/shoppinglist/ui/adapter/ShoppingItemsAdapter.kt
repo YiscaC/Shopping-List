@@ -24,6 +24,7 @@ class ShoppingItemsAdapter(
 ) : RecyclerView.Adapter<ShoppingItemsAdapter.ShoppingItemViewHolder>() {
 
     inner class ShoppingItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val previewImage: ImageView = view.findViewById(R.id.previewImage)
         val name: TextView = view.findViewById(R.id.itemName)
         val checkbox: CheckBox = view.findViewById(R.id.itemCheckbox)
         val quantityLayout: LinearLayout = view.findViewById(R.id.quantityLayout)
@@ -68,34 +69,33 @@ class ShoppingItemsAdapter(
             holder.name.paintFlags = holder.name.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
         }
 
+        // אזור פריסה
+        holder.quantityLayout.visibility = if (item.expanded) View.VISIBLE else View.GONE
+        holder.commentsSection.visibility = if (item.expanded) View.VISIBLE else View.GONE
+        holder.messagesRecyclerView.visibility = if (item.expanded) View.VISIBLE else View.GONE
+
+        if (item.expanded) {
+            holder.messagesRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
+            val adapter = MessagesAdapter(item.messages, FirebaseAuth.getInstance().currentUser?.uid.orEmpty())
+            holder.messagesAdapter = adapter
+            holder.messagesRecyclerView.adapter = adapter
+        }
+
+        if (item.previewImageBitmap != null && item.expanded) {
+            holder.previewImage.setImageBitmap(item.previewImageBitmap)
+            holder.previewImage.visibility = View.VISIBLE
+        } else {
+            holder.previewImage.visibility = View.GONE
+        }
+
         holder.name.setOnClickListener {
             item.expanded = !item.expanded
-            holder.quantityLayout.visibility = if (item.expanded) View.VISIBLE else View.GONE
-            holder.commentsSection.visibility = if (item.expanded) View.VISIBLE else View.GONE
-            holder.itemImage.visibility = View.GONE
-
-            holder.messagesRecyclerView.visibility = if (item.expanded) View.VISIBLE else View.GONE
-            if (item.expanded) {
-                holder.messagesRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
-                val adapter = MessagesAdapter(item.messages, FirebaseAuth.getInstance().currentUser?.uid ?: "")
-                holder.messagesAdapter = adapter
-                holder.messagesRecyclerView.adapter = adapter
-            }
-
             notifyItemChanged(position)
         }
 
         holder.checkbox.setOnCheckedChangeListener { _, isChecked ->
             item.purchased = isChecked
             onPurchasedChanged(item, isChecked)
-
-            if (isChecked) {
-                holder.itemView.setBackgroundResource(R.drawable.item_background_checked)
-                holder.name.paintFlags = holder.name.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            } else {
-                holder.itemView.setBackgroundResource(R.drawable.item_unchecked_background)
-                holder.name.paintFlags = holder.name.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-            }
 
             val mutableList = items.toMutableList().apply {
                 remove(item)
@@ -118,31 +118,72 @@ class ShoppingItemsAdapter(
 
         holder.sendCommentButton.setOnClickListener {
             val commentText = holder.commentInput.text.toString().trim()
-            if (commentText.isNotEmpty()) {
-                onCommentAdded(item, commentText)
-                holder.commentInput.setText("")
-            } else {
+            val hasText = commentText.isNotEmpty()
+            val hasImage = item.previewImageBitmap != null
+
+            if (!hasText && !hasImage) {
                 Toast.makeText(
                     holder.itemView.context,
                     "לא ניתן לשלוח הודעה ריקה",
                     Toast.LENGTH_SHORT
                 ).show()
+                return@setOnClickListener
+            }
+
+            item.expanded = true // ✅ שומר את הפריט פתוח
+
+            if (hasText) {
+                onCommentAdded(item, commentText)
+                holder.commentInput.setText("")
+            }
+
+            if (hasImage) {
+                onCommentAdded(item, "") // שולח את התמונה בלבד
+            }
+
+            item.previewImageBitmap = null
+            holder.previewImage.setImageBitmap(null)
+            holder.previewImage.visibility = View.GONE
+
+            notifyItemChanged(holder.adapterPosition) // ✅ מרענן את הפריט תוך שמירה על expanded
+
+            // גלילה אוטומטית להודעה האחרונה
+            holder.messagesRecyclerView.post {
+                holder.messagesRecyclerView.scrollToPosition(
+                    holder.messagesAdapter?.itemCount?.minus(1) ?: 0
+                )
             }
         }
 
-        holder.addImageButton.setOnClickListener { onImageAdded(item) }
-        holder.selectFromGalleryButton.setOnClickListener { onGallerySelected(item) }
 
-        // עדכון הודעות (אם קיים adapter)
+        holder.addImageButton.setOnClickListener {
+            onImageAdded(item)
+        }
+
+        holder.selectFromGalleryButton.setOnClickListener {
+            onGallerySelected(item)
+        }
+
         holder.messagesAdapter?.updateMessages(item.messages)
     }
+
 
     override fun getItemCount(): Int = items.size
 
     fun updateItems(newItems: List<ShoppingItem>) {
-        items = newItems
+        val expandedMap = items.associateBy({ it.id }, { it.expanded }) // שומר פריסה קיימת
+        val previewMap = items.associateBy({ it.id }, { it.previewImageBitmap }) // שומר preview תמונה
+
+        items = newItems.map { item ->
+            item.copy(
+                expanded = expandedMap[item.id] ?: false,
+                previewImageBitmap = previewMap[item.id] // נשמר עד שהמשתמש שולח או מוחק
+            )
+        }
+
         notifyDataSetChanged()
     }
+
 
     fun swapItems(fromPosition: Int, toPosition: Int) {
         if (fromPosition == toPosition) return

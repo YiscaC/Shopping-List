@@ -99,18 +99,23 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
     fun uploadMessageImageFromUri(itemId: String, uri: Uri) {
-        val imageRef = storage.child("messages/${itemId}_${System.currentTimeMillis()}.jpg")
+        val senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+        val timestamp = System.currentTimeMillis()
+        val localPath = uri.toString() // מציגים את הנתיב המקומי לפני ההעלאה
+
+        val message = Message(senderId, null, localPath, timestamp)
+
+        viewModelScope.launch {
+            repository.addMessageToItem(listId, itemId, message)
+        }
+
+        val imageRef = storage.child("messages/${itemId}_$timestamp.jpg")
         val uploadTask = imageRef.putFile(uri)
 
         uploadTask.addOnSuccessListener {
             imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                val message = Message(
-                    senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
-                    imageUrl = downloadUri.toString(),
-                    timestamp = System.currentTimeMillis()
-                )
                 viewModelScope.launch {
-                    repository.addMessageToItem(listId, itemId, message)
+                    repository.updateMessageImageUrl(listId, itemId, timestamp, downloadUri.toString())
                 }
             }
         }.addOnFailureListener {
@@ -118,25 +123,32 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+
     fun uploadMessageImageFromBytes(itemId: String, imageData: ByteArray) {
-        val imageRef = storage.child("messages/${itemId}_${System.currentTimeMillis()}.jpg")
+        val senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+        val timestamp = System.currentTimeMillis()
+        val message = Message(senderId, null, null, timestamp)
+
+        viewModelScope.launch {
+            repository.addMessageToItem(listId, itemId, message)
+        }
+
+        val imageRef = storage.child("messages/${itemId}_$timestamp.jpg")
         val uploadTask = imageRef.putBytes(imageData)
 
         uploadTask.addOnSuccessListener {
             imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                val message = Message(
-                    senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
-                    imageUrl = downloadUri.toString(),
-                    timestamp = System.currentTimeMillis()
-                )
                 viewModelScope.launch {
-                    repository.addMessageToItem(listId, itemId, message)
+                    repository.updateMessageImageUrl(listId, itemId, timestamp, downloadUri.toString())
                 }
             }
         }.addOnFailureListener {
             Log.e("Firebase", "שגיאה בהעלאת תמונה מהמצלמה: ${it.message}")
         }
     }
+
+
+
 
     fun deleteItem(itemId: String) {
         viewModelScope.launch {

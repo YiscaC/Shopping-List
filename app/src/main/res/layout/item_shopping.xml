@@ -86,14 +86,7 @@
             android:layout_marginTop="8dp"
             android:overScrollMode="never"/>
         <!-- תמונה מוצגת -->
-        <ImageView
-            android:id="@+id/itemImage"
-            android:layout_width="match_parent"
-            android:layout_height="160dp"
-            android:scaleType="centerCrop"
-            android:layout_marginTop="8dp"
-            android:visibility="gone"
-            android:background="@drawable/image_placeholder"/>
+
         <!-- אזור תגובה בטוח עם כפתורים -->
         <LinearLayout
             android:id="@+id/commentsSection"
@@ -104,7 +97,14 @@
             android:padding="8dp"
             android:layout_marginTop="12dp"
             android:visibility="gone">
-
+            <ImageView
+                android:id="@+id/itemImage"
+                android:layout_width="match_parent"
+                android:layout_height="1000dp"
+                android:scaleType="centerCrop"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                android:background="@drawable/image_placeholder"/>
             <EditText
                 android:id="@+id/itemComment"
                 android:layout_width="match_parent"
@@ -117,6 +117,15 @@
                 android:gravity="top|start"
                 android:maxLines="5"
                 android:padding="6dp"/>
+            <ImageView
+                android:id="@+id/previewImage"
+                android:layout_width="160dp"
+                android:layout_height="160dp"
+                android:layout_marginTop="8dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:background="@drawable/image_placeholder"/>
+
 
             <LinearLayout
                 android:layout_width="match_parent"

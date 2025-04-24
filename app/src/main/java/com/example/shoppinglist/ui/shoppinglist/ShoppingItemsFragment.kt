@@ -30,6 +30,9 @@ import com.example.shoppinglist.databinding.FragmentShoppingItemsBinding
 import com.example.shoppinglist.ui.adapter.ShoppingItemsAdapter
 import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
 import java.io.ByteArrayOutputStream
+import android.graphics.Matrix
+private var pendingImageUri: Uri? = null
+private var pendingImageBitmap: Bitmap? = null
 
 class ShoppingItemsFragment : Fragment() {
 
@@ -79,8 +82,16 @@ class ShoppingItemsFragment : Fragment() {
                 viewModel.updateItemQuantity(selectedItem.id, newQuantity)
             },
             onCommentAdded = { selectedItem, comment ->
-                viewModel.addMessageToItem(selectedItem.id, comment)
+                currentItemId = selectedItem.id
+
+                if (comment.isNotBlank()) {
+                    viewModel.addMessageToItem(selectedItem.id, comment)
+                }
+
+                sendPendingImageIfNeeded()
+
             },
+
             onImageAdded = { selectedItem ->
                 currentItemId = selectedItem.id
                 requestCameraPermission()
@@ -208,24 +219,97 @@ class ShoppingItemsFragment : Fragment() {
         cameraLauncher.launch(intent)
     }
 
-    private val cameraLauncher = registerForActivityResult(
+    val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val imageBitmap = result.data?.extras?.get("data") as? Bitmap
-            imageBitmap?.let { uploadMessageImage(it) }
+            imageBitmap?.let {
+                val rotated = rotateBitmapIfRequired(it)
+                pendingImageBitmap = rotated
+
+                // מציגים רק לאחר לחיצה על שליחה – כמו בגלריה
+                val currentList = adapter.currentItems().toMutableList()
+                val index = currentList.indexOfFirst { item -> item.id == currentItemId }
+                if (index != -1) {
+                    currentList[index].previewImageBitmap = rotated
+                    currentList[index].expanded = true
+                    adapter.updateItems(currentList)
+                    binding.recyclerView.scrollToPosition(index)
+                }
+
+                Toast.makeText(requireContext(), "תמונה מוכנה לשליחה", Toast.LENGTH_SHORT).show()
+            }
         }
     }
+
+
 
     private fun openGallery() {
         galleryLauncher.launch("image/*")
     }
-
-    private val galleryLauncher = registerForActivityResult(
+    val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { uploadMessageImage(it) }
+        uri?.let {
+            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, it)
+            pendingImageUri = it
+
+            val currentList = adapter.currentItems().toMutableList()
+            val index = currentList.indexOfFirst { item -> item.id == currentItemId }
+            if (index != -1) {
+                currentList[index].previewImageBitmap = bitmap
+                currentList[index].expanded = true
+                adapter.notifyItemChanged(index) // ✅ גם כאן
+                binding.recyclerView.scrollToPosition(index)
+            }
+
+            Toast.makeText(requireContext(), "תמונה מוכנה לשליחה", Toast.LENGTH_SHORT).show()
+        }
     }
+
+
+    private fun rotateBitmapIfRequired(bitmap: Bitmap, uri: Uri? = null): Bitmap {
+        val ei = uri?.let {
+            requireContext().contentResolver.openInputStream(it)?.use { input ->
+                androidx.exifinterface.media.ExifInterface(input)
+            }
+        } ?: return bitmap
+
+        val orientation = ei.getAttributeInt(
+            androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,
+            androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL
+        )
+
+        val rotation = when (orientation) {
+            androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+
+        return if (rotation != 0f) {
+            val matrix = Matrix().apply { postRotate(rotation) }
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        } else bitmap
+    }
+
+    private fun sendPendingImageIfNeeded() {
+        val itemId = currentItemId ?: return
+
+        pendingImageUri?.let {
+            viewModel.uploadMessageImageFromUri(itemId, it)
+            pendingImageUri = null
+        }
+
+        pendingImageBitmap?.let {
+            val baos = ByteArrayOutputStream()
+            it.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+            viewModel.uploadMessageImageFromBytes(itemId, baos.toByteArray())
+            pendingImageBitmap = null
+        }
+    }
+
 
     private fun uploadMessageImage(uri: Uri) {
         currentItemId?.let { itemId ->
