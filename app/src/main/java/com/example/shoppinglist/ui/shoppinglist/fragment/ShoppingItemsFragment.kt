@@ -31,8 +31,12 @@ import com.example.shoppinglist.ui.adapter.ShoppingItemsAdapter
 import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
 import java.io.ByteArrayOutputStream
 import android.graphics.Matrix
+import android.util.Log
+import androidx.fragment.app.activityViewModels
+
 private var pendingImageUri: Uri? = null
 private var pendingImageBitmap: Bitmap? = null
+private var rememberedListId: String? = null
 
 class ShoppingItemsFragment : Fragment() {
 
@@ -46,10 +50,26 @@ class ShoppingItemsFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentShoppingItemsBinding.inflate(inflater, container, false)
+
+        val idToUse = args.listId.ifBlank { rememberedListId }
+
+        if (idToUse.isNullOrEmpty()) {
+            Log.e("ShoppingItems", "אין listId - לא טוען את המסך, אבל גם לא יוצא")
+            Toast.makeText(requireContext(), "לא ניתן לטעון את הרשימה", Toast.LENGTH_LONG).show()
+            // *** אל תצאי מהמסך! רק תחזירי את ה־View ריק ***
+            return binding.root
+        }
+
+        viewModel.setListId(idToUse)
+        rememberedListId = idToUse
         return binding.root
     }
 
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        Log.d("ShoppingItems", "Received listId: ${args.listId}")
+
         super.onViewCreated(view, savedInstanceState)
 
         viewModel.setListId(args.listId)
@@ -192,9 +212,17 @@ class ShoppingItemsFragment : Fragment() {
         }
 
         viewModel.itemsList.observe(viewLifecycleOwner) { items ->
-            val sorted = items.map { it.toShoppingItem() }.sortedBy { it.order }
-            adapter.updateItems(sorted)
+            try {
+                Log.d("ShoppingItems", "items loaded: ${items.size}")
+                val sorted = items.map { it.toShoppingItem() }.sortedBy { it.order }
+                Log.d("ShoppingItems", "items mapped and sorted")
+                adapter.updateItems(sorted)
+                Log.d("ShoppingItems", "adapter updated")
+            } catch (e: Exception) {
+                Log.e("ShoppingItems", "שגיאה בטעינת פריטים: ${e.message}", e)
+            }
         }
+
     }
 
     private fun requestCameraPermission() {
@@ -297,18 +325,29 @@ class ShoppingItemsFragment : Fragment() {
     private fun sendPendingImageIfNeeded() {
         val itemId = currentItemId ?: return
 
+        // קודם שולחים את ה-URI אם קיים
         pendingImageUri?.let {
+            Log.d("DEBUG", "שולחת תמונה מ־Uri לפריט: $itemId")
             viewModel.uploadMessageImageFromUri(itemId, it)
             pendingImageUri = null
         }
 
+        // ואז אם יש Bitmap (מהמצלמה), שולחים אותו
         pendingImageBitmap?.let {
-            val baos = ByteArrayOutputStream()
-            it.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-            viewModel.uploadMessageImageFromBytes(itemId, baos.toByteArray())
+            Log.d("DEBUG", "שולחת תמונה מ־Bitmap לפריט: $itemId")
+            try {
+                val baos = ByteArrayOutputStream()
+                it.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+                viewModel.uploadMessageImageFromBytes(itemId, baos.toByteArray())
+            } catch (e: Exception) {
+                Log.e("DEBUG", "שגיאה בהעלאת Bitmap: ${e.message}")
+            }
             pendingImageBitmap = null
         }
+
+        Log.d("DEBUG", "סיימנו לשלוח תמונות לפריט: $itemId – נשארים באותו מסך ✅")
     }
+
 
 
     private fun uploadMessageImage(uri: Uri) {

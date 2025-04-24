@@ -14,7 +14,9 @@ import com.squareup.picasso.Picasso
 class MessagesAdapter(
 
     private var messages: List<Message>,
-    private val currentUserId: String
+    private val currentUserId: String,
+
+
 ) : RecyclerView.Adapter<MessagesAdapter.MessageViewHolder>() {
 
     inner class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -33,7 +35,13 @@ class MessagesAdapter(
     }
 
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
+
         val message = messages[position]
+        if (message.text.isNullOrEmpty() && message.imageUrl.isNullOrEmpty()) {
+            holder.text.visibility = View.GONE
+            holder.image.visibility = View.GONE
+            return
+        }
 
         // טקסט
         if (!message.text.isNullOrEmpty()) {
@@ -58,9 +66,21 @@ class MessagesAdapter(
                 holder.image.visibility = View.GONE
             }
             // אחרת – נטען מ־Firebase
+            if (messages.isNullOrEmpty()) return
+
             else {
-                Picasso.get().load(imageUrl).into(holder.image)
+                try {
+                    if (imageUrl.startsWith("http")) {
+                        Picasso.get().load(imageUrl).into(holder.image)
+                    } else {
+                        holder.image.visibility = View.GONE
+                    }
+                } catch (e: Exception) {
+                    holder.image.visibility = View.GONE
+                    e.printStackTrace()
+                }
             }
+
         } else {
             holder.image.visibility = View.GONE
         }

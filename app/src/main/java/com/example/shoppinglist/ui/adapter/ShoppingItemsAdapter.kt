@@ -75,11 +75,18 @@ class ShoppingItemsAdapter(
         holder.messagesRecyclerView.visibility = if (item.expanded) View.VISIBLE else View.GONE
 
         if (item.expanded) {
-            holder.messagesRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
-            val adapter = MessagesAdapter(item.messages, FirebaseAuth.getInstance().currentUser?.uid.orEmpty())
-            holder.messagesAdapter = adapter
-            holder.messagesRecyclerView.adapter = adapter
+            if (holder.messagesAdapter == null) {
+                holder.messagesAdapter = MessagesAdapter(item.messages, FirebaseAuth.getInstance().currentUser?.uid.orEmpty())
+                holder.messagesRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
+                holder.messagesRecyclerView.adapter = holder.messagesAdapter
+            } else {
+                holder.messagesAdapter?.updateMessages(item.messages)
+            }
+            holder.messagesRecyclerView.visibility = View.VISIBLE
+        } else {
+            holder.messagesRecyclerView.visibility = View.GONE
         }
+
 
         if (item.previewImageBitmap != null && item.expanded) {
             holder.previewImage.setImageBitmap(item.previewImageBitmap)

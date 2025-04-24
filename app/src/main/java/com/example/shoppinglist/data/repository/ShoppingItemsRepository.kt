@@ -28,7 +28,27 @@ class ShoppingItemsRepository(context: Context) {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val items = mutableListOf<ShoppingItemEntity>()
                 for (itemSnapshot in snapshot.children) {
-                    val item = itemSnapshot.getValue(ShoppingItem::class.java)
+                    val id = itemSnapshot.key.orEmpty()
+                    val name = itemSnapshot.child("name").getValue(String::class.java).orEmpty()
+                    val quantity = itemSnapshot.child("quantity").getValue(Int::class.java) ?: 1
+                    val purchased = itemSnapshot.child("purchased").getValue(Boolean::class.java) ?: false
+                    val order = itemSnapshot.child("order").getValue(Int::class.java) ?: 0
+
+                    val messagesSnapshot = itemSnapshot.child("messages")
+                    val messages = mutableListOf<Message>()
+                    for (msgSnapshot in messagesSnapshot.children) {
+                        msgSnapshot.getValue(Message::class.java)?.let { messages.add(it) }
+                    }
+
+                    val item = ShoppingItemEntity(
+                        id = id,
+                        listId = listId,
+                        name = name,
+                        quantity = quantity,
+                        purchased = purchased,
+                        order = order,
+                        messages = messages
+                    )
                     item?.let {
                         val messagesSnapshot = itemSnapshot.child("messages")
                         val messages = mutableListOf<Message>()
