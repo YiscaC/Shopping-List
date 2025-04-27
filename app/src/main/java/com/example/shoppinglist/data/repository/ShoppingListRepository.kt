@@ -1,3 +1,4 @@
+
 package com.example.shoppinglist.data.repository
 
 import android.content.Context
@@ -23,27 +24,51 @@ class ShoppingListRepository(private val context: Context) {
 
     fun getUserShoppingLists(): LiveData<List<ShoppingListEntity>> {
         return currentUserId?.let { shoppingListDao.getUserShoppingLists(it) }
-            ?: throw IllegalStateException("User not logged in")
+            ?: throw IllegalStateException("משתמש לא מחובר")
     }
 
     suspend fun createShoppingList(name: String) {
-        val newListId = dbRef.push().key ?: return
         val ownerId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-        val initialParticipants = mapOf(ownerId to true) // ✅ הבעלים גם משתתף
-        val newList = ShoppingListEntity(newListId, name, ownerId, initialParticipants)
+        // יוצרים רשימה חדשה עם מזהה זמני (לטובת Room)
+        val tempId = System.currentTimeMillis().toString()
+        val initialParticipants = mapOf(ownerId to true)
+        val newList = ShoppingListEntity(tempId, name, ownerId, initialParticipants)
 
-        dbRef.child(newListId).setValue(newList)
+        // שמירה מיידית ב-ROOM
         withContext(Dispatchers.IO) {
             shoppingListDao.insertShoppingList(newList)
+        }
+
+        try {
+            // ניסיון שמירה בפיירבייס
+            val newListId = dbRef.push().key ?: return
+            val firebaseList = newList.copy(id = newListId)
+
+            dbRef.child(newListId).setValue(firebaseList).await()
+
+            // עידכון ה-ROOM עם ה-ID האמיתי מהפיירבייס
+            withContext(Dispatchers.IO) {
+                shoppingListDao.deleteShoppingList(newList)
+                shoppingListDao.insertShoppingList(firebaseList)
+            }
+        } catch (e: Exception) {
+            Log.e("ShoppingListRepository", "\uD83D\uDEAB שגיאה בשמירה לפיירבייס: ${e.message}")
         }
     }
 
     suspend fun deleteShoppingList(listId: String) {
-        dbRef.child(listId).removeValue()
+        // מחיקה מה-ROOM תמיד
         withContext(Dispatchers.IO) {
             val list = shoppingListDao.getListById(listId)
             if (list != null) shoppingListDao.deleteShoppingList(list)
+        }
+
+        // מחיקה מפיירבייס אם יש אינטרנט
+        try {
+            dbRef.child(listId).removeValue().await()
+        } catch (e: Exception) {
+            Log.e("ShoppingListRepository", "\uD83D\uDEAB שגיאה במחיקת רשימה מפיירבייס: ${e.message}")
         }
     }
 
@@ -59,31 +84,37 @@ class ShoppingListRepository(private val context: Context) {
 
     suspend fun addParticipant(listId: String, participantEmail: String): Boolean {
         val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: return false
-        if (participantEmail == currentUserEmail) return false // ❌ לא מוסיפים את עצמנו
+        if (participantEmail == currentUserEmail) return false // \u274C לא מוסיפים את עצמנו
 
-        val allUsers = usersRef.get().await()
-        var participantUid: String? = null
+        return try {
+            val allUsers = usersRef.get().await()
+            var participantUid: String? = null
 
-        for (user in allUsers.children) {
-            val email = user.child("email").value as? String
-            if (email == participantEmail) {
-                participantUid = user.key
-                break
+            for (user in allUsers.children) {
+                val email = user.child("email").value as? String
+                if (email == participantEmail) {
+                    participantUid = user.key
+                    break
+                }
             }
+
+            if (participantUid == null) return false
+
+            withContext(Dispatchers.IO) {
+                val list = shoppingListDao.getListById(listId) ?: return@withContext
+                val updated = list.participants + (participantUid to true)
+                val updatedList = list.copy(participants = updated)
+
+                shoppingListDao.updateList(updatedList)
+            }
+
+            dbRef.child(listId).child("participants").child(participantUid).setValue(true).await()
+            true
+
+        } catch (e: Exception) {
+            Log.e("ShoppingListRepository", "\uD83D\uDEAB שגיאה בהוספת משתתף: ${e.message}")
+            false
         }
-
-        if (participantUid == null) return false
-
-        withContext(Dispatchers.IO) {
-            val list = shoppingListDao.getListById(listId) ?: return@withContext
-            val updated = list.participants + (participantUid to true)
-            val updatedList = list.copy(participants = updated)
-
-            shoppingListDao.updateList(updatedList)
-            dbRef.child(listId).child("participants").child(participantUid).setValue(true)
-        }
-
-        return true
     }
 
     fun refreshShoppingLists() {
@@ -105,11 +136,16 @@ class ShoppingListRepository(private val context: Context) {
                 }
             }
 
-            // שמירה ל-ROOM
-            shoppingListDao.insertShoppingLists(shoppingLists)
+            // עדכון הנתונים ב-ROOM
+            withContext(Dispatchers.IO) {
+                shoppingListDao.insertShoppingLists(shoppingLists)
+            }
 
         } catch (e: Exception) {
-            Log.e("ShoppingListRepository", "❌ שגיאה בטעינת רשימות מפיירבייס", e)
+            Log.e("ShoppingListRepository", "\uD83D\uDEAB שגיאה בטעינת רשימות מהפיירבייס: ${e.message}")
         }
     }
 }
+
+
+
