@@ -32,7 +32,6 @@ class ShoppingListFragment : Fragment() {
     private val usersRef = FirebaseDatabase.getInstance().reference.child("users")
     private val participantImages = mutableMapOf<String, String>()
 
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -66,94 +65,86 @@ class ShoppingListFragment : Fragment() {
             showAddListDialog()
         }
 
-        // ✅ מאזינים לשינויים ברשימות
+        // רענון עם משיכה למטה
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            viewModel.refreshShoppingLists()
+        }
+
+        observeShoppingLists()
+
+        sharedViewModel.refreshShoppingLists.observe(viewLifecycleOwner) {
+            viewModel.refreshShoppingLists()
+        }
+    }
+
+    private fun observeShoppingLists() {
         viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
             val userLists = lists.filter {
                 it.ownerId == currentUserId || it.participants.containsKey(currentUserId)
             }
 
             val uidsToFetch = userLists.flatMap { it.participants.keys }.toSet()
+
             fetchParticipantImages(uidsToFetch) { images ->
                 participantImages.clear()
                 participantImages.putAll(images)
+
                 val shoppingModels = userLists.map {
                     ShoppingList(it.id, it.name, it.ownerId, it.participants)
                 }
                 adapter.updateLists(shoppingModels, participantImages)
+                binding.swipeRefreshLayout.isRefreshing = false // להפסיק את הספינר אחרי טעינה
             }
         }
-
-        sharedViewModel.refreshShoppingLists.observe(viewLifecycleOwner) {
-            viewModel.refreshShoppingLists()
-
-            viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
-                val userLists = lists.filter {
-                    it.ownerId == currentUserId || it.participants.containsKey(currentUserId)
-                }
-                val uidsToFetch = userLists.flatMap { it.participants.keys }.toSet()
-
-                fetchParticipantImages(uidsToFetch) { images ->
-                    participantImages.clear()
-                    participantImages.putAll(images)
-
-                    val shoppingModels = userLists.map {
-                        ShoppingList(it.id, it.name, it.ownerId, it.participants)
-                    }
-                    adapter.updateLists(shoppingModels, participantImages)
-                }
-            }
-        }
-
     }
-
 
     private fun showAddListDialog() {
         val input = EditText(requireContext())
-        input.hint = "Enter list name"
+        input.hint = "הכנס שם רשימה"
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Create Shopping List")
+            .setTitle("יצירת רשימת קניות")
             .setView(input)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton("צור") { _, _ ->
                 val listName = input.text.toString().trim()
                 if (listName.isNotEmpty()) {
                     viewModel.createShoppingList(listName)
                 } else {
-                    Toast.makeText(requireContext(), "⚠ List name cannot be empty", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "⚠ שם הרשימה לא יכול להיות ריק", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("ביטול", null)
             .show()
     }
 
     private fun showAddParticipantDialog(listId: String) {
         val input = EditText(requireContext())
-        input.hint = "Enter participant email"
+        input.hint = "הכנס כתובת מייל של משתתף"
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Add Participant")
+            .setTitle("הוספת משתתף")
             .setView(input)
-            .setPositiveButton("Add") { _, _ ->
+            .setPositiveButton("הוסף") { _, _ ->
                 val participantEmail = input.text.toString().trim()
                 if (participantEmail.isNotEmpty()) {
                     viewModel.addParticipantToList(listId, participantEmail) { success ->
                         requireActivity().runOnUiThread {
                             if (success) {
-                                Toast.makeText(requireContext(), "✅ Participant added!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(requireContext(), "✅ משתתף נוסף בהצלחה", Toast.LENGTH_SHORT).show()
                             } else {
-                                Toast.makeText(requireContext(), "❌ User not found!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(requireContext(), "❌ לא נמצא משתמש עם כתובת המייל הזו", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
                 } else {
-                    Toast.makeText(requireContext(), "⚠ Participant email cannot be empty", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "⚠ כתובת מייל לא יכולה להיות ריקה", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("ביטול", null)
             .show()
     }
 
-    // ✅ שליפת URL של התמונה לכל UID
+    // שליפת כתובת תמונה לכל UID
     private fun fetchParticipantImages(uids: Set<String>, callback: (Map<String, String>) -> Unit) {
         val imagesMap = mutableMapOf<String, String>()
         val tasksToWait = uids.size

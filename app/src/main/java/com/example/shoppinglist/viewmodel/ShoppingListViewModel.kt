@@ -12,34 +12,40 @@ class ShoppingListViewModel(application: Application) : AndroidViewModel(applica
 
     private val repository = ShoppingListRepository(application)
 
-    private val _shoppingLists = repository.getUserShoppingLists()
-    val shoppingLists: LiveData<List<ShoppingListEntity>> get() = _shoppingLists
+    // רשימת הקניות של המשתמש (מתעדכנת אוטומטית מה-ROOM)
+    val shoppingLists: LiveData<List<ShoppingListEntity>> = repository.getUserShoppingLists()
 
+    // יצירת רשימה חדשה
     fun createShoppingList(name: String) {
         viewModelScope.launch {
             repository.createShoppingList(name)
-            refreshShoppingLists() // ✅ ישר לרענן אחרי יצירה
+            // אין צורך לקרוא ל-refresh, כי LiveData מתעדכן לבד מ-ROOM
         }
     }
 
+    // מחיקת רשימה
     fun deleteShoppingList(listId: String) {
         viewModelScope.launch {
             repository.deleteShoppingList(listId)
-            refreshShoppingLists() // ✅ ישר לרענן אחרי מחיקה
+            // אין צורך לקרוא ל-refresh, כי LiveData מתעדכן לבד מ-ROOM
         }
     }
 
+    // הוספת משתתף לרשימה קיימת
     fun addParticipantToList(listId: String, participantEmail: String, callback: (Boolean) -> Unit) {
         viewModelScope.launch {
             val success = repository.addParticipant(listId, participantEmail)
-            refreshShoppingLists() // ✅ ישר לרענן אחרי הוספה
+            // אין צורך לקרוא ל-refresh, כי אנו מעדכנים את ROOM ישירות
             callback(success)
         }
     }
 
+    // רענון רשימות מהפיירבייס (לפי דרישה)
     fun refreshShoppingLists() {
         viewModelScope.launch {
             repository.refreshShoppingLists()
         }
     }
 }
+
+
