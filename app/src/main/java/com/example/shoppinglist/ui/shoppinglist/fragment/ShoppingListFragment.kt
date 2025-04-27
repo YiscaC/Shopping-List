@@ -65,7 +65,6 @@ class ShoppingListFragment : Fragment() {
             showAddListDialog()
         }
 
-        // רענון עם משיכה למטה
         binding.swipeRefreshLayout.setOnRefreshListener {
             viewModel.refreshShoppingLists()
         }
