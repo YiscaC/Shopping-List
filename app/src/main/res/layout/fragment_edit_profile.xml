@@ -15,19 +15,20 @@
         <!-- תמונת פרופיל -->
         <ImageView
             android:id="@+id/profileImage"
-            android:layout_width="160dp"
-            android:layout_height="160dp"
-            android:layout_marginBottom="8dp"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_marginBottom="12dp"
             android:src="@drawable/default_profile"
             android:background="@drawable/circle_background"
             android:clipToOutline="true"
             android:scaleType="centerCrop" />
 
-        <!-- מצלמה וגלריה -->
+        <!-- כפתורי מצלמה וגלריה -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center"
             android:layout_marginBottom="24dp">
 
             <ImageButton
@@ -37,7 +38,7 @@
                 android:background="@drawable/square_background"
                 android:padding="10dp"
                 android:src="@drawable/ic_camera"
-                android:contentDescription="מצלמה" />
+                android:contentDescription="צילום תמונה" />
 
             <ImageButton
                 android:id="@+id/btnGallery"
@@ -47,14 +48,14 @@
                 android:background="@drawable/square_background"
                 android:padding="10dp"
                 android:src="@drawable/ic_gallery"
-                android:contentDescription="גלריה" />
+                android:contentDescription="בחירת תמונה מהגלריה" />
         </LinearLayout>
 
-        <!-- אימייל - ללא כפתור עריכה -->
+        <!-- אימייל (לא ניתן לעריכה) -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="16dp">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editEmail"
@@ -79,8 +80,7 @@
                 android:layout_height="wrap_content"
                 android:hint="שם משתמש"
                 android:textColor="@android:color/black"
-                android:drawableStart="@drawable/ic_edit"
-                android:drawableEnd="@drawable/ic_user"
+                android:drawableStart="@drawable/ic_user"
                 android:drawablePadding="8dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -97,7 +97,6 @@
                 android:hint="שם מלא"
                 android:textColor="@android:color/black"
                 android:drawableStart="@drawable/ic_edit"
-                android:drawableEnd="@drawable/ic_user"
                 android:drawablePadding="8dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -114,12 +113,11 @@
                 android:hint="מספר טלפון"
                 android:inputType="phone"
                 android:textColor="@android:color/black"
-                android:drawableStart="@drawable/ic_edit"
-                android:drawableEnd="@drawable/ic_phone"
+                android:drawableStart="@drawable/ic_phone"
                 android:drawablePadding="8dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- סיסמה -->
+        <!-- סיסמה חדשה -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -132,28 +130,29 @@
                 android:hint="סיסמה חדשה"
                 android:inputType="textPassword"
                 android:textColor="@android:color/black"
-                android:drawableStart="@drawable/ic_edit"
-                android:drawableEnd="@drawable/ic_password"
-
+                android:drawableStart="@drawable/ic_password"
                 android:drawablePadding="8dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- כפתור שמירה -->
+        <!-- כפתור שמירת שינויים -->
         <Button
             android:id="@+id/btnSaveEdit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="שמור שינויים"
             android:backgroundTint="@color/green"
-            android:textColor="@android:color/white" />
+            android:textColor="@android:color/white"
+            android:drawableStart="@drawable/ic_save"
+            android:drawablePadding="8dp" />
+
+        <!-- טוען -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="gone"
             android:layout_gravity="center"
-            android:layout_marginTop="16dp"/>
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
 
     </LinearLayout>
-
 </ScrollView>

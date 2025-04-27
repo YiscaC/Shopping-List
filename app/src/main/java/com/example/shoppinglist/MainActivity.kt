@@ -37,37 +37,30 @@ class MainActivity : AppCompatActivity() {
         val bottomNavView = findViewById<BottomNavigationView>(R.id.bottom_nav_view)
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            bottomNavView.menu.clear()
 
             when (destination.id) {
-                R.id.shoppingItemsFragment, R.id.participantsFragment -> {
-                    bottomNavView.inflateMenu(R.menu.bottom_nav)
-                    bottomNavView.menu.findItem(R.id.shoppingItemsFragment).isVisible = true
-                    bottomNavView.menu.findItem(R.id.participantsFragment).isVisible = true
-                    bottomNavView.menu.findItem(R.id.shoppingListFragment).isVisible = false
-                    bottomNavView.menu.findItem(R.id.profileFragment).isVisible = false
-                }
-
-                R.id.shoppingListFragment, R.id.profileFragment -> {
-                    bottomNavView.inflateMenu(R.menu.bottom_nav)
-                    bottomNavView.menu.findItem(R.id.shoppingListFragment).isVisible = true
-                    bottomNavView.menu.findItem(R.id.profileFragment).isVisible = true
-                    bottomNavView.menu.findItem(R.id.shoppingItemsFragment).isVisible = false
-                    bottomNavView.menu.findItem(R.id.participantsFragment).isVisible = false
-                }
-
-                R.id.loginFragment, R.id.signUpFragment -> {
+                R.id.loginFragment, R.id.signUpFragment  -> {
                     bottomNavView.visibility = View.GONE
-                    return@addOnDestinationChangedListener
+                    supportActionBar?.setDisplayHomeAsUpEnabled(false)
                 }
-
+                R.id.participantsFragment -> {
+                    bottomNavView.visibility = View.GONE
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true) // ✅ חץ חזור
+                }
+                R.id.shoppingItemsFragment -> {
+                    bottomNavView.visibility = View.GONE
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true) // ✅ חץ חזור
+                }
+                R.id.profileFragment, R.id.editProfileFragment , R.id.shoppingListFragment-> {
+                    bottomNavView.visibility = View.VISIBLE
+                    supportActionBar?.setDisplayHomeAsUpEnabled(false) // ❌ אין חץ חזור
+                }
                 else -> {
-                    bottomNavView.inflateMenu(R.menu.bottom_nav)
+                    bottomNavView.visibility = View.VISIBLE
+                    supportActionBar?.setDisplayHomeAsUpEnabled(false)
                 }
-
             }
 
-            bottomNavView.visibility = View.VISIBLE
             markMenuItemAsSelected(bottomNavView, destination.id)
         }
 
@@ -139,4 +132,5 @@ class MainActivity : AppCompatActivity() {
             item?.isChecked = true
         }
     }
+
 }

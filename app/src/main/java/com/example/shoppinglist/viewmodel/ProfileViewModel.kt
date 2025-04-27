@@ -1,8 +1,12 @@
 package com.example.shoppinglist.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -45,6 +49,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // טוען קודם נתונים מה-ROOM
                 val localUser = repository.getLocalUser(uid)
                 localUser?.let {
                     Log.d("ProfileViewModel", "Loaded from Room: $it")
@@ -54,17 +59,21 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     _profileImageUrl.postValue(it.localProfileImagePath)
                 }
 
-                repository.getUserData { username, firstName, phone, imageUrl ->
-                    if (!username.isNullOrBlank() && username != _username.value) _username.postValue(username)
-                    if (!firstName.isNullOrBlank() && firstName != _firstName.value) _firstName.postValue(firstName)
-                    if (!phone.isNullOrBlank() && phone != _phone.value) _phone.postValue(phone)
+                // רק אם יש אינטרנט – נביא גם מהשרת
+                if (isInternetAvailable(getApplication())) {
+                    repository.getUserData { username, firstName, phone, imageUrl ->
+                        if (!username.isNullOrBlank() && username != _username.value) _username.postValue(username)
+                        if (!firstName.isNullOrBlank() && firstName != _firstName.value) _firstName.postValue(firstName)
+                        if (!phone.isNullOrBlank() && phone != _phone.value) _phone.postValue(phone)
 
-                    val currentPath = _profileImageUrl.value
-                    val isRoomImage = currentPath?.startsWith("/data") == true
-                    if (!isRoomImage && !imageUrl.isNullOrBlank()) {
-                        _profileImageUrl.postValue(imageUrl)
+                        val currentPath = _profileImageUrl.value
+                        val isRoomImage = currentPath?.startsWith("/data") == true
+                        if (!isRoomImage && !imageUrl.isNullOrBlank()) {
+                            _profileImageUrl.postValue(imageUrl)
+                        }
                     }
                 }
+
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "שגיאה ב-loadUserData", e)
             }
@@ -161,10 +170,46 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun deleteUserAccount() {
-        repository.deleteUserAccount { success ->
-            _deleteSuccess.postValue(success)
+        val uid = repository.getCurrentUser()?.uid ?: return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                repository.deleteUserDataFromLists(uid) { success ->
+                    if (success) {
+                        repository.deleteUserAccount { deleteSuccess ->
+                            _deleteSuccess.postValue(deleteSuccess)
+                        }
+                    } else {
+                        _deleteSuccess.postValue(false)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "❌ שגיאה במחיקת משתמש ורשימות", e)
+                _deleteSuccess.postValue(false)
+            }
+        }
+    }
+    fun deleteUserAccountWithReAuth(email: String, password: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                repository.deleteUserAccountWithReAuth(email, password) { success ->
+                    _deleteSuccess.postValue(success)
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "❌ שגיאה במחיקה עם רה-אימות", e)
+                _deleteSuccess.postValue(false)
+            }
         }
     }
 
+
     fun getCurrentUser() = repository.getCurrentUser()
+
+    // פונקציה לבדוק אינטרנט
+    private fun isInternetAvailable(context: Context): Boolean {
+        val connectivityManager = ContextCompat.getSystemService(context, ConnectivityManager::class.java)
+        val network = connectivityManager?.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
 }

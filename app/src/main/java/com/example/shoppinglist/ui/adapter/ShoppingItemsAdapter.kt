@@ -10,10 +10,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.R
 import com.example.shoppinglist.data.local.models.ShoppingItem
+import com.example.shoppinglist.data.local.models.ShoppingListItem
 import com.google.firebase.auth.FirebaseAuth
 
 class ShoppingItemsAdapter(
-    private var items: List<ShoppingItem>,
+    private var items: List<ShoppingListItem>,
     private val onItemClick: (ShoppingItem) -> Unit,
     private val onPurchasedChanged: (ShoppingItem, Boolean) -> Unit,
     private val onQuantityChanged: (ShoppingItem, Int) -> Unit,
@@ -21,9 +22,18 @@ class ShoppingItemsAdapter(
     private val onImageAdded: (ShoppingItem) -> Unit,
     private val onGallerySelected: (ShoppingItem) -> Unit,
     private val onItemDeleted: (ShoppingItem) -> Unit
-) : RecyclerView.Adapter<ShoppingItemsAdapter.ShoppingItemViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    inner class ShoppingItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    companion object {
+        private const val VIEW_TYPE_CATEGORY = 0
+        private const val VIEW_TYPE_PRODUCT = 1
+    }
+
+    inner class CategoryHeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val categoryName: TextView = view.findViewById(R.id.categoryName)
+    }
+
+    inner class ShoppingProductViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val previewImage: ImageView = view.findViewById(R.id.previewImage)
         val name: TextView = view.findViewById(R.id.itemName)
         val checkbox: CheckBox = view.findViewById(R.id.itemCheckbox)
@@ -36,23 +46,45 @@ class ShoppingItemsAdapter(
         val sendCommentButton: ImageButton = view.findViewById(R.id.btnSendComment)
         val addImageButton: ImageButton = view.findViewById(R.id.btnAddImage)
         val selectFromGalleryButton: ImageButton = view.findViewById(R.id.btnSelectFromGallery)
-        val itemImage: ImageView = view.findViewById(R.id.itemImage)
         val messagesRecyclerView: RecyclerView = view.findViewById(R.id.messagesRecyclerView)
 
         var messagesAdapter: MessagesAdapter? = null
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShoppingItemViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_shopping, parent, false)
-        return ShoppingItemViewHolder(view)
+    override fun getItemViewType(position: Int): Int {
+        return when (items[position]) {
+            is ShoppingListItem.CategoryHeader -> VIEW_TYPE_CATEGORY
+            is ShoppingListItem.ShoppingProduct -> VIEW_TYPE_PRODUCT
+        }
     }
 
-    override fun onBindViewHolder(holder: ShoppingItemViewHolder, position: Int) {
-        val item = items[position]
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return when (viewType) {
+            VIEW_TYPE_CATEGORY -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_category_header, parent, false)
+                CategoryHeaderViewHolder(view)
+            }
+            else -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_shopping, parent, false)
+                ShoppingProductViewHolder(view)
+            }
+        }
+    }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = items[position]) {
+            is ShoppingListItem.CategoryHeader -> {
+                (holder as CategoryHeaderViewHolder).categoryName.text = item.categoryName
+            }
+            is ShoppingListItem.ShoppingProduct -> {
+                bindProduct(holder as ShoppingProductViewHolder, item.item)
+            }
+        }
+    }
+
+    private fun bindProduct(holder: ShoppingProductViewHolder, item: ShoppingItem) {
         holder.name.text = if (!item.expanded) {
-            if (item.quantity > 1) "${item.name}   ×${item.quantity}" else item.name
+            if (item.quantity > 1) "${item.name} ×${item.quantity}" else item.name
         } else {
             item.name
         }
@@ -69,7 +101,6 @@ class ShoppingItemsAdapter(
             holder.name.paintFlags = holder.name.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
         }
 
-        // אזור פריסה
         holder.quantityLayout.visibility = if (item.expanded) View.VISIBLE else View.GONE
         holder.commentsSection.visibility = if (item.expanded) View.VISIBLE else View.GONE
         holder.messagesRecyclerView.visibility = if (item.expanded) View.VISIBLE else View.GONE
@@ -82,11 +113,7 @@ class ShoppingItemsAdapter(
             } else {
                 holder.messagesAdapter?.updateMessages(item.messages)
             }
-            holder.messagesRecyclerView.visibility = View.VISIBLE
-        } else {
-            holder.messagesRecyclerView.visibility = View.GONE
         }
-
 
         if (item.previewImageBitmap != null && item.expanded) {
             holder.previewImage.setImageBitmap(item.previewImageBitmap)
@@ -95,33 +122,10 @@ class ShoppingItemsAdapter(
             holder.previewImage.visibility = View.GONE
         }
 
-        holder.name.setOnClickListener {
-            item.expanded = !item.expanded
-            notifyItemChanged(position)
-        }
-
-        holder.checkbox.setOnCheckedChangeListener { _, isChecked ->
-            item.purchased = isChecked
-            onPurchasedChanged(item, isChecked)
-
-            val mutableList = items.toMutableList().apply {
-                remove(item)
-                if (isChecked) add(item) else add(0, item)
-            }
-            updateItems(mutableList)
-        }
-
-        holder.increaseButton.setOnClickListener {
-            val newQuantity = item.quantity + 1
-            onQuantityChanged(item, newQuantity)
-            holder.quantityText.setText(newQuantity.toString())
-        }
-
-        holder.decreaseButton.setOnClickListener {
-            val newQuantity = if (item.quantity > 1) item.quantity - 1 else 1
-            onQuantityChanged(item, newQuantity)
-            holder.quantityText.setText(newQuantity.toString())
-        }
+        holder.name.setOnClickListener { onItemClick(item) }
+        holder.checkbox.setOnCheckedChangeListener { _, isChecked -> onPurchasedChanged(item, isChecked) }
+        holder.increaseButton.setOnClickListener { onQuantityChanged(item, item.quantity + 1) }
+        holder.decreaseButton.setOnClickListener { onQuantityChanged(item, maxOf(1, item.quantity - 1)) }
 
         holder.sendCommentButton.setOnClickListener {
             val commentText = holder.commentInput.text.toString().trim()
@@ -129,82 +133,81 @@ class ShoppingItemsAdapter(
             val hasImage = item.previewImageBitmap != null
 
             if (!hasText && !hasImage) {
-                Toast.makeText(
-                    holder.itemView.context,
-                    "לא ניתן לשלוח הודעה ריקה",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(holder.itemView.context, "לא ניתן לשלוח הודעה ריקה", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            item.expanded = true // ✅ שומר את הפריט פתוח
+            // שולחים טקסט ותמונה אם קיימים
+            if (hasText) onCommentAdded(item, commentText)
+            if (hasImage) onCommentAdded(item, "")
 
-            if (hasText) {
-                onCommentAdded(item, commentText)
-                holder.commentInput.setText("")
-            }
-
-            if (hasImage) {
-                onCommentAdded(item, "") // שולח את התמונה בלבד
-            }
-
+            // ניקוי התמונה והטקסט אחרי שליחה
             item.previewImageBitmap = null
             holder.previewImage.setImageBitmap(null)
             holder.previewImage.visibility = View.GONE
+            holder.commentInput.text.clear()
 
-            notifyItemChanged(holder.adapterPosition) // ✅ מרענן את הפריט תוך שמירה על expanded
+            holder.messagesAdapter?.notifyDataSetChanged()
 
-            // גלילה אוטומטית להודעה האחרונה
-            holder.messagesRecyclerView.post {
-                holder.messagesRecyclerView.scrollToPosition(
-                    holder.messagesAdapter?.itemCount?.minus(1) ?: 0
-                )
-            }
+            // לא סוגרים את הפריט
+            notifyItemChanged(holder.adapterPosition)
         }
 
-
-        holder.addImageButton.setOnClickListener {
-            onImageAdded(item)
-        }
-
-        holder.selectFromGalleryButton.setOnClickListener {
-            onGallerySelected(item)
-        }
-
-        holder.messagesAdapter?.updateMessages(item.messages)
+        holder.addImageButton.setOnClickListener { onImageAdded(item) }
+        holder.selectFromGalleryButton.setOnClickListener { onGallerySelected(item) }
     }
-
 
     override fun getItemCount(): Int = items.size
 
-    fun updateItems(newItems: List<ShoppingItem>) {
-        val expandedMap = items.associateBy({ it.id }, { it.expanded }) // שומר פריסה קיימת
-        val previewMap = items.associateBy({ it.id }, { it.previewImageBitmap }) // שומר preview תמונה
+    fun updateItems(newItems: List<ShoppingListItem>) {
+        val expandedMap = items
+            .filterIsInstance<ShoppingListItem.ShoppingProduct>()
+            .associateBy({ it.item.id }, { it.item.expanded })
+
+        val previewMap = items
+            .filterIsInstance<ShoppingListItem.ShoppingProduct>()
+            .associateBy({ it.item.id }, { it.item.previewImageBitmap })
 
         items = newItems.map { item ->
-            item.copy(
-                expanded = expandedMap[item.id] ?: false,
-                previewImageBitmap = previewMap[item.id] // נשמר עד שהמשתמש שולח או מוחק
-            )
+            when (item) {
+                is ShoppingListItem.CategoryHeader -> item
+                is ShoppingListItem.ShoppingProduct -> item.copy(
+                    item = item.item.copy(
+                        expanded = expandedMap[item.item.id] ?: false,
+                        previewImageBitmap = previewMap[item.item.id]
+                    )
+                )
+            }
         }
-
         notifyDataSetChanged()
     }
 
-
-    fun swapItems(fromPosition: Int, toPosition: Int) {
+    fun swapItems(fromPosition: Int, toPosition: Int, onItemsReordered: (List<Pair<String, Int>>) -> Unit) {
         if (fromPosition == toPosition) return
+
         val mutableList = items.toMutableList()
-        val item = mutableList.removeAt(fromPosition)
-        mutableList.add(toPosition, item)
-        items = mutableList
-        notifyItemMoved(fromPosition, toPosition)
+        val fromItem = mutableList.getOrNull(fromPosition)
+        val toItem = mutableList.getOrNull(toPosition)
+
+        if (fromItem is ShoppingListItem.ShoppingProduct && toItem is ShoppingListItem.ShoppingProduct) {
+            if (fromItem.item.category == toItem.item.category) {
+                mutableList.removeAt(fromPosition)
+                mutableList.add(toPosition, fromItem)
+
+                items = mutableList
+                notifyItemMoved(fromPosition, toPosition)
+
+                // ✅ כאן שולחים עדכון ל-ViewModel עם הסדר החדש
+                val updatedOrders = mutableList.mapIndexedNotNull { index, listItem ->
+                    if (listItem is ShoppingListItem.ShoppingProduct)
+                        listItem.item.id to index
+                    else null
+                }
+                onItemsReordered(updatedOrders)
+            }
+        }
     }
 
-    fun sortItemsByChecked() {
-        val sorted = items.sortedBy { it.purchased }
-        updateItems(sorted)
-    }
 
-    fun currentItems(): List<ShoppingItem> = items
+    fun currentItems(): List<ShoppingListItem> = items
 }

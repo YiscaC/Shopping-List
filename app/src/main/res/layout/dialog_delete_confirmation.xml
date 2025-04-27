@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp"
+    android:orientation="vertical"
+    android:layoutDirection="rtl">
+
+    <!-- כותרת -->
+    <TextView
+        android:id="@+id/deleteTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="מחיקת משתמש"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:gravity="start"
+        android:paddingBottom="8dp" />
+
+    <!-- טקסט ההודעה -->
+    <TextView
+        android:id="@+id/deleteMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="האם אתה בטוח שברצונך למחוק את המשתמש?"
+        android:textSize="16sp"
+        android:gravity="start"
+        android:textColor="#333333" />
+</LinearLayout>

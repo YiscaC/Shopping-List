@@ -2,9 +2,11 @@ package com.example.shoppinglist.ui.profile
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -62,11 +64,26 @@ class ProfileFragment : Fragment() {
         }
 
         binding.btnDeleteAccount.setOnClickListener {
+            val email = viewModel.email.value
+            if (email.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "שגיאה: לא נמצא אימייל", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val input = EditText(requireContext())
+            input.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+
             AlertDialog.Builder(requireContext())
                 .setTitle("מחיקת משתמש")
-                .setMessage("האם את בטוחה שברצונך למחוק את המשתמש?")
-                .setPositiveButton("מחק") { _, _ ->
-                    viewModel.deleteUserAccount()
+                .setMessage("אנא הזן את הסיסמה שלך לאימות")
+                .setView(input)
+                .setPositiveButton("אישור") { _, _ ->
+                    val password = input.text.toString().trim()
+                    if (password.isNotEmpty()) {
+                        viewModel.deleteUserAccountWithReAuth(email, password)
+                    } else {
+                        Toast.makeText(requireContext(), "חובה להזין סיסמה", Toast.LENGTH_SHORT).show()
+                    }
                 }
                 .setNegativeButton("ביטול", null)
                 .show()

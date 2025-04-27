@@ -8,8 +8,10 @@ import com.example.shoppinglist.data.local.AppDatabase
 class ParticipantsViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ParticipantsViewModel::class.java)) {
-            val userDao = AppDatabase.getDatabase(context).userDao()
-            return ParticipantsViewModel(userDao) as T
+            val db = AppDatabase.getDatabase(context)
+            val userDao = db.userDao()
+            val shoppingListDao = db.shoppingListDao()
+            return ParticipantsViewModel(userDao, shoppingListDao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

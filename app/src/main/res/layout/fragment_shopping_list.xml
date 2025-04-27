@@ -7,14 +7,14 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    tools:context=".ShoppingListFragment">
+   >
 
     <Button
         android:id="@+id/btnAddList"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add List"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp"
+        android:text="רשימה חדשה" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"

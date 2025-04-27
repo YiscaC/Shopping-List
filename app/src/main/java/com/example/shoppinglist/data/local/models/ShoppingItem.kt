@@ -12,7 +12,8 @@ data class ShoppingItem(
     var expanded: Boolean = false, // ✅ האם הפריט פתוח או סגור
     var order: Int = 0,
     var messages: List<Message> = emptyList(), // ✅ הוספת הודעות לפריט
-    var previewImageBitmap: Bitmap? = null
+    var previewImageBitmap: Bitmap? = null,
+    var category: String = ""
 
 
 )

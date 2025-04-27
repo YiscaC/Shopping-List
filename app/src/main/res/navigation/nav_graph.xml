@@ -44,7 +44,6 @@
                 app:argType="string" />
         </action>
 
-        <!-- ✅ תוקן: הוספנו את listId לפעולה -->
         <action
             android:id="@+id/action_shoppingListFragment_to_participantsFragment"
             app:destination="@id/participantsFragment">
@@ -76,30 +75,14 @@
             app:destination="@id/profileFragment" />
     </fragment>
 
-    <!-- ✅ תוקן השם של המחלקה במסך משתתפים -->
     <fragment
         android:id="@+id/participantsFragment"
         android:name="com.example.shoppinglist.ui.shoppinglist.fragment.ParticipantsFragment"
         android:label="Participants">
-
         <argument
             android:name="listId"
             app:argType="string" />
-
-        <action
-            android:id="@+id/action_participantsFragment_to_shoppingItemsFragment"
-            app:destination="@id/shoppingItemsFragment">
-            <argument
-                android:name="listId"
-                app:argType="string" />
-            <argument
-                android:name="listName"
-                app:argType="string" />
-        </action>
-
-        <action
-            android:id="@+id/action_participantsFragment_to_profileFragment"
-            app:destination="@id/profileFragment"/>
+        <!-- ❌ אין פה שום action! -->
     </fragment>
 
     <fragment

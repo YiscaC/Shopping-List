@@ -46,14 +46,20 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
             repository.updateItemOrder(listId, itemId, newOrder)
         }
     }
-
-    fun addItemToFirebase(itemName: String) {
+    fun updateMultipleItemsOrder(updatedOrders: List<Pair<String, Int>>) {
         viewModelScope.launch {
-            repository.addItemToFirebase(listId, itemName)
+            updatedOrders.forEach { (itemId, newOrder) ->
+                repository.updateItemOrder(listId, itemId, newOrder)
+            }
         }
     }
 
-    // ✅ שליחת הודעת טקסט
+    fun addItemToFirebase(itemName: String, category: String) {
+        viewModelScope.launch {
+            repository.addItemToFirebase(listId, itemName, category)
+        }
+    }
+
     fun addMessageToItem(itemId: String, text: String) {
         val message = Message(
             senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
@@ -66,45 +72,12 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    // ✅ העלאת תמונה כהודעה מסוג תמונה
-    fun uploadMessageImage(itemId: String, imageUri: Uri) {
-        val senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
-        val imageRef = storage.child("message_images/${itemId}_${System.currentTimeMillis()}.jpg")
-        val uploadTask = imageRef.putFile(imageUri)
-
-        uploadTask.addOnSuccessListener {
-            imageRef.downloadUrl.addOnSuccessListener { uri ->
-                viewModelScope.launch {
-                    repository.uploadMessageImage(listId, itemId, senderId, uri.toString())
-                }
-            }
-        }.addOnFailureListener {
-            Log.e("Firebase", "שגיאה בהעלאת תמונה: ${it.message}")
-        }
-    }
-
-    fun uploadMessageImage(itemId: String, imageData: ByteArray) {
-        val senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
-        val imageRef = storage.child("message_images/${itemId}_${System.currentTimeMillis()}.jpg")
-        val uploadTask = imageRef.putBytes(imageData)
-
-        uploadTask.addOnSuccessListener {
-            imageRef.downloadUrl.addOnSuccessListener { uri ->
-                viewModelScope.launch {
-                    repository.uploadMessageImage(listId, itemId, senderId, uri.toString())
-                }
-            }
-        }.addOnFailureListener {
-            Log.e("Firebase", "שגיאה בהעלאת תמונה: ${it.message}")
-        }
-    }
     fun uploadMessageImageFromUri(itemId: String, uri: Uri) {
         val senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
         val timestamp = System.currentTimeMillis()
-        val localPath = uri.toString() // מציגים את הנתיב המקומי לפני ההעלאה
+        val localPath = uri.toString()
 
         val message = Message(senderId, null, localPath, timestamp)
-
         viewModelScope.launch {
             repository.addMessageToItem(listId, itemId, message)
         }
@@ -119,16 +92,14 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
                 }
             }
         }.addOnFailureListener {
-            Log.e("Firebase", "שגיאה בהעלאת תמונה מהגלריה: ${it.message}")
+            Log.e("Firebase", "\u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05d4\u05e2\u05dc\u05d0\u05ea \u05ea\u05de\u05d5\u05e0\u05d4: \${it.message}")
         }
     }
-
 
     fun uploadMessageImageFromBytes(itemId: String, imageData: ByteArray) {
         val senderId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
         val timestamp = System.currentTimeMillis()
         val message = Message(senderId, null, null, timestamp)
-
         viewModelScope.launch {
             repository.addMessageToItem(listId, itemId, message)
         }
@@ -143,12 +114,9 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
                 }
             }
         }.addOnFailureListener {
-            Log.e("Firebase", "שגיאה בהעלאת תמונה מהמצלמה: ${it.message}")
+            Log.e("Firebase", "\u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05d4\u05e2\u05dc\u05d0\u05ea \u05ea\u05de\u05d5\u05e0\u05d4: \${it.message}")
         }
     }
-
-
-
 
     fun deleteItem(itemId: String) {
         viewModelScope.launch {

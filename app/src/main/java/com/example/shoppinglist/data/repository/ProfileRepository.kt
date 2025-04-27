@@ -109,7 +109,8 @@ class ProfileRepository(private val context: Context) {
                                     username = localUser?.username.orEmpty(),
                                     firstName = localUser?.firstName.orEmpty(),
                                     phone = localUser?.phone.orEmpty(),
-                                    localProfileImagePath = imageUrl
+                                    localProfileImagePath = localUser?.localProfileImagePath, // תשאיר את השדה המקומי
+                                    remoteProfileImageUrl = imageUrl // כאן תשמור את כתובת האינטרנט
                                 )
                                 insertUser(updatedUser)
                             }
@@ -167,6 +168,69 @@ class ProfileRepository(private val context: Context) {
             .addOnSuccessListener { callback(true) }
             .addOnFailureListener { callback(false) }
     }
+    fun deleteUserDataFromLists(uid: String, onComplete: (Boolean) -> Unit) {
+        val listsRef = db.getReference("shoppingLists")
+
+        listsRef.get()
+            .addOnSuccessListener { snapshot ->
+                val tasks = mutableListOf<com.google.android.gms.tasks.Task<Void>>()
+
+                snapshot.children.forEach { listSnapshot ->
+                    val ownerId = listSnapshot.child("owner").getValue(String::class.java)
+                    val participants = listSnapshot.child("participants").value as? Map<String, Boolean>
+
+                    val listId = listSnapshot.key ?: return@forEach
+
+                    if (ownerId == uid) {
+                        // המשתמש הוא הבעלים - מוחקים את כל הרשימה
+                        val task = listsRef.child(listId).removeValue()
+                        tasks.add(task)
+                    } else if (participants?.containsKey(uid) == true) {
+                        // המשתמש משתתף - נסיר אותו
+                        val task = listsRef.child(listId).child("participants").child(uid).removeValue()
+                        tasks.add(task)
+                    }
+                }
+
+                // נמתין שכל המחיקות יסתיימו
+                com.google.android.gms.tasks.Tasks.whenAllComplete(tasks)
+                    .addOnSuccessListener {
+                        onComplete(true)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("ProfileRepository", "❌ שגיאה במחיקת רשימות", e)
+                        onComplete(false)
+                    }
+            }
+            .addOnFailureListener { e ->
+                Log.e("ProfileRepository", "❌ שגיאה בשליפת רשימות", e)
+                onComplete(false)
+            }
+    }
+
+    fun deleteUserAccountWithReAuth(email: String, password: String, callback: (Boolean) -> Unit) {
+        val user = auth.currentUser ?: return
+        val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, password)
+
+        user.reauthenticate(credential)
+            .addOnSuccessListener {
+                deleteUserDataFromLists(user.uid) { success ->
+                    if (success) {
+                        db.getReference("users").child(user.uid).removeValue()
+                        user.delete()
+                            .addOnSuccessListener { callback(true) }
+                            .addOnFailureListener { callback(false) }
+                    } else {
+                        callback(false)
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("ProfileRepository", "❌ רה-אימות נכשל", e)
+                callback(false)
+            }
+    }
+
 
     suspend fun saveUserToRoom(uid: String, username: String, firstName: String, phone: String, localImagePath: String?) {
         val user = UserEntity(uid, username, firstName, phone, localImagePath)

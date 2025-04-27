@@ -15,7 +15,8 @@ data class ShoppingItemEntity(
     val purchased: Boolean,
     val imageUrl: String? = null,
     val order: Int = 0, // ✅ שדה חדש לציון סדר הפריטים
-    val messages: List<Message> = emptyList() // ✅ שדה חדש של הודעות
+    val messages: List<Message> = emptyList(), // ✅ שדה חדש של הודעות
+    val category: String = "" // ✅ שדה חדש לקטגוריה - חסר אצלך!
 ) {
     fun toShoppingItem(): ShoppingItem {
         return ShoppingItem(
@@ -25,7 +26,8 @@ data class ShoppingItemEntity(
             purchased = purchased,
             expanded = false,
             order = order,
-            messages = messages // ✅ הוספה להמרה
+            messages = messages,
+            category = category // ✅ המרה תקינה
         )
     }
 }

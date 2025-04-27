@@ -57,7 +57,7 @@
                 android:layout_marginStart="12dp"
                 android:background="@drawable/rounded_add_button"
                 android:padding="8dp"
-                android:src="@drawable/ic_add"
+                android:src="@drawable/ic_add_user"
                 android:contentDescription="@null" />
 
         </LinearLayout>

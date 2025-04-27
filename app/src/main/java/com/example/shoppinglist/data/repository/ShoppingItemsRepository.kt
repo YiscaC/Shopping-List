@@ -39,6 +39,7 @@ class ShoppingItemsRepository(context: Context) {
                     for (msgSnapshot in messagesSnapshot.children) {
                         msgSnapshot.getValue(Message::class.java)?.let { messages.add(it) }
                     }
+                    val category = itemSnapshot.child("category").getValue(String::class.java).orEmpty()
 
                     val item = ShoppingItemEntity(
                         id = id,
@@ -47,26 +48,13 @@ class ShoppingItemsRepository(context: Context) {
                         quantity = quantity,
                         purchased = purchased,
                         order = order,
-                        messages = messages
+                        messages = messages,
+                        category = category,
                     )
                     item?.let {
-                        val messagesSnapshot = itemSnapshot.child("messages")
-                        val messages = mutableListOf<Message>()
-                        for (msgSnapshot in messagesSnapshot.children) {
-                            msgSnapshot.getValue(Message::class.java)?.let { messages.add(it) }
-                        }
-                        items.add(
-                            ShoppingItemEntity(
-                                id = it.id,
-                                listId = listId,
-                                name = it.name,
-                                quantity = it.quantity,
-                                purchased = it.purchased,
-                                order = it.order,
-                                messages = messages
-                            )
-                        )
+                        items.add(it) // פשוט מוסיפים את האייטם המקורי שכבר כולל category!
                     }
+
                 }
                 CoroutineScope(Dispatchers.IO).launch {
                     items.forEach { shoppingItemDao.insertItem(it) }
@@ -92,15 +80,25 @@ class ShoppingItemsRepository(context: Context) {
         shoppingItemDao.updateItemOrder(itemId, newOrder)
     }
 
-    suspend fun addItemToFirebase(listId: String, itemName: String) {
+    suspend fun addItemToFirebase(listId: String, itemName: String, category: String) {
         val newItemId = db.child(listId).child("items").push().key ?: return
-        val newItem = ShoppingItemEntity(newItemId, listId, itemName, 1, false, order = 0)
+        val newItem = ShoppingItemEntity(
+            id = newItemId,
+            listId = listId,
+            name = itemName,
+            quantity = 1,
+            purchased = false,
+            order = 0,
+            messages = emptyList(),
+            category = category // ✅ הוספתי את הקטגוריה פה
+        )
 
         db.child(listId).child("items").child(newItemId).setValue(newItem)
         withContext(Dispatchers.IO) {
             shoppingItemDao.insertItem(newItem)
         }
     }
+
 
     suspend fun addMessageToItem(listId: String, itemId: String, message: Message) {
         db.child(listId).child("items").child(itemId).child("messages").push().setValue(message)

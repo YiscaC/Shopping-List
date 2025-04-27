@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,6 +16,7 @@ import com.example.shoppinglist.databinding.FragmentShoppingListBinding
 import com.example.shoppinglist.ui.adapter.ShoppingListAdapter
 import com.example.shoppinglist.viewmodel.ShoppingListViewModel
 import com.example.shoppinglist.data.local.models.ShoppingList
+import com.example.shoppinglist.viewmodel.SharedShoppingListViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 
@@ -22,11 +24,14 @@ class ShoppingListFragment : Fragment() {
 
     private lateinit var binding: FragmentShoppingListBinding
     private val viewModel: ShoppingListViewModel by viewModels()
+    private val sharedViewModel: SharedShoppingListViewModel by activityViewModels()
+
     private lateinit var adapter: ShoppingListAdapter
 
     private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     private val usersRef = FirebaseDatabase.getInstance().reference.child("users")
     private val participantImages = mutableMapOf<String, String>()
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -61,12 +66,12 @@ class ShoppingListFragment : Fragment() {
             showAddListDialog()
         }
 
+        // ✅ מאזינים לשינויים ברשימות
         viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
             val userLists = lists.filter {
                 it.ownerId == currentUserId || it.participants.containsKey(currentUserId)
             }
 
-            // שליפת תמונות עבור כל המשתתפים
             val uidsToFetch = userLists.flatMap { it.participants.keys }.toSet()
             fetchParticipantImages(uidsToFetch) { images ->
                 participantImages.clear()
@@ -77,7 +82,30 @@ class ShoppingListFragment : Fragment() {
                 adapter.updateLists(shoppingModels, participantImages)
             }
         }
+
+        sharedViewModel.refreshShoppingLists.observe(viewLifecycleOwner) {
+            viewModel.refreshShoppingLists()
+
+            viewModel.shoppingLists.observe(viewLifecycleOwner) { lists ->
+                val userLists = lists.filter {
+                    it.ownerId == currentUserId || it.participants.containsKey(currentUserId)
+                }
+                val uidsToFetch = userLists.flatMap { it.participants.keys }.toSet()
+
+                fetchParticipantImages(uidsToFetch) { images ->
+                    participantImages.clear()
+                    participantImages.putAll(images)
+
+                    val shoppingModels = userLists.map {
+                        ShoppingList(it.id, it.name, it.ownerId, it.participants)
+                    }
+                    adapter.updateLists(shoppingModels, participantImages)
+                }
+            }
+        }
+
     }
+
 
     private fun showAddListDialog() {
         val input = EditText(requireContext())

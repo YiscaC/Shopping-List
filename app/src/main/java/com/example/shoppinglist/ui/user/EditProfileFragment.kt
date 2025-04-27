@@ -82,6 +82,9 @@ class EditProfileFragment : Fragment() {
         viewModel.phone.observe(viewLifecycleOwner) {
             binding.editPhone.setText(it)
         }
+        viewModel.email.observe(viewLifecycleOwner) {
+            binding.editEmail.setText(it)
+        }
         viewModel.profileImageUrl.observe(viewLifecycleOwner) { url ->
             if (!url.isNullOrEmpty()) {
                 val file = File(url)
@@ -94,6 +97,10 @@ class EditProfileFragment : Fragment() {
         }
 
         binding.btnCamera.setOnClickListener {
+            if (!isInternetAvailable(requireContext())) {
+                Toast.makeText(requireContext(), "אין אינטרנט – לא ניתן להשתמש במצלמה", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val permission = Manifest.permission.CAMERA
             if (ContextCompat.checkSelfPermission(requireContext(), permission)
                 == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -105,6 +112,10 @@ class EditProfileFragment : Fragment() {
         }
 
         binding.btnGallery.setOnClickListener {
+            if (!isInternetAvailable(requireContext())) {
+                Toast.makeText(requireContext(), "אין אינטרנט – לא ניתן לבחור תמונה", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             galleryLauncher.launch("image/*")
         }
 
@@ -121,7 +132,11 @@ class EditProfileFragment : Fragment() {
 
             binding.progressBar.visibility = View.VISIBLE
 
-            viewModel.updateProfile(username, firstName, phone)
+            if (selectedImageUri != null && !isInternetAvailable(requireContext())) {
+                Toast.makeText(requireContext(), "אין אינטרנט – לא ניתן להעלות תמונה", Toast.LENGTH_SHORT).show()
+                binding.progressBar.visibility = View.GONE
+                return@setOnClickListener
+            }
 
             selectedImageUri?.let { uri ->
                 val rotatedBitmap = getRotatedBitmapFromUri(requireContext(), uri)
@@ -129,13 +144,13 @@ class EditProfileFragment : Fragment() {
                     val baos = ByteArrayOutputStream()
                     bmp.compress(Bitmap.CompressFormat.JPEG, 70, baos)
                     val bytes = baos.toByteArray()
-                    binding.profileImage.setImageBitmap(bmp)
+
                     viewModel.saveProfileImage(bytes) { success ->
                         if (success) {
-                            viewModel.loadUserData()
-                            Toast.makeText(requireContext(), "תמונה נשמרה", Toast.LENGTH_SHORT).show()
+                            viewModel.updateProfile(username, firstName, phone, viewModel.profileImageUrl.value)
+                            Toast.makeText(requireContext(), "פרופיל עודכן בהצלחה", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(requireContext(), "שגיאה בשמירת התמונה", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), "שמירת תמונה נכשלה", Toast.LENGTH_SHORT).show()
                         }
                         binding.progressBar.visibility = View.GONE
                     }
@@ -143,6 +158,8 @@ class EditProfileFragment : Fragment() {
                     binding.progressBar.visibility = View.GONE
                 }
             } ?: run {
+                viewModel.updateProfile(username, firstName, phone)
+                Toast.makeText(requireContext(), "פרופיל עודכן בהצלחה", Toast.LENGTH_SHORT).show()
                 binding.progressBar.visibility = View.GONE
             }
 
@@ -155,8 +172,6 @@ class EditProfileFragment : Fragment() {
                         Toast.makeText(requireContext(), "עדכון הסיסמה נכשל", Toast.LENGTH_SHORT).show()
                     }
             }
-
-            Toast.makeText(requireContext(), "הפרופיל עודכן", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -189,5 +204,12 @@ class EditProfileFragment : Fragment() {
         val matrix = Matrix()
         matrix.postRotate(rotationDegrees)
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    private fun isInternetAvailable(context: Context): Boolean {
+        val connectivityManager = ContextCompat.getSystemService(context, android.net.ConnectivityManager::class.java)
+        val network = connectivityManager?.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 }

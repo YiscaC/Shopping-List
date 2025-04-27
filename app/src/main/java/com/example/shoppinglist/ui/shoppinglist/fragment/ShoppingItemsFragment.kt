@@ -3,36 +3,39 @@ package com.example.shoppinglist.ui.shoppinglist.fragment
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.Toast
+import android.util.Log
+import android.view.*
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shoppinglist.MainActivity
 import com.example.shoppinglist.R
+import com.example.shoppinglist.data.local.models.Category
+import com.example.shoppinglist.data.local.models.ShoppingItem
+import com.example.shoppinglist.data.local.models.ShoppingListItem
 import com.example.shoppinglist.databinding.FragmentShoppingItemsBinding
 import com.example.shoppinglist.ui.adapter.ShoppingItemsAdapter
 import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.io.ByteArrayOutputStream
-import android.graphics.Matrix
-import android.util.Log
-import androidx.fragment.app.activityViewModels
 
 private var pendingImageUri: Uri? = null
 private var pendingImageBitmap: Bitmap? = null
@@ -43,36 +46,33 @@ class ShoppingItemsFragment : Fragment() {
     private lateinit var binding: FragmentShoppingItemsBinding
     private val args: ShoppingItemsFragmentArgs by navArgs()
     private val viewModel: ShoppingItemsViewModel by viewModels()
+
     private lateinit var adapter: ShoppingItemsAdapter
     private var currentItemId: String? = null
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentShoppingItemsBinding.inflate(inflater, container, false)
-
         val idToUse = args.listId.ifBlank { rememberedListId }
-
         if (idToUse.isNullOrEmpty()) {
-            Log.e("ShoppingItems", "אין listId - לא טוען את המסך, אבל גם לא יוצא")
-            Toast.makeText(requireContext(), "לא ניתן לטעון את הרשימה", Toast.LENGTH_LONG).show()
-            // *** אל תצאי מהמסך! רק תחזירי את ה־View ריק ***
+            Toast.makeText(requireContext(), "\u05dc\u05d0 \u05e0\u05d9\u05ea\u05df \u05dc\u05d8\u05e2\u05d5\u05df \u05d0\u05ea \u05d4\u05e8\u05e9\u05d9\u05de\u05d4", Toast.LENGTH_LONG).show()
             return binding.root
         }
-
         viewModel.setListId(idToUse)
         rememberedListId = idToUse
         return binding.root
     }
-
-
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.menu_shopping_items, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        Log.d("ShoppingItems", "Received listId: ${args.listId}")
-
         super.onViewCreated(view, savedInstanceState)
-
-        viewModel.setListId(args.listId)
 
         (activity as? MainActivity)?.apply {
             activeListId = args.listId
@@ -89,29 +89,18 @@ class ShoppingItemsFragment : Fragment() {
             },
             onPurchasedChanged = { selectedItem, isChecked ->
                 viewModel.updateItemPurchased(selectedItem.id, isChecked)
-                val newList = adapter.currentItems().toMutableList().apply {
-                    remove(selectedItem)
-                    if (isChecked) add(selectedItem) else add(0, selectedItem)
-                }
-                adapter.updateItems(newList)
-                newList.forEachIndexed { index, item ->
-                    viewModel.updateItemOrder(item.id, index)
-                }
             },
             onQuantityChanged = { selectedItem, newQuantity ->
                 viewModel.updateItemQuantity(selectedItem.id, newQuantity)
             },
             onCommentAdded = { selectedItem, comment ->
                 currentItemId = selectedItem.id
-
                 if (comment.isNotBlank()) {
                     viewModel.addMessageToItem(selectedItem.id, comment)
                 }
-
                 sendPendingImageIfNeeded()
-
+                clearInputFields(selectedItem)
             },
-
             onImageAdded = { selectedItem ->
                 currentItemId = selectedItem.id
                 requestCameraPermission()
@@ -126,109 +115,85 @@ class ShoppingItemsFragment : Fragment() {
         )
 
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.setHasFixedSize(false)
         binding.recyclerView.adapter = adapter
 
-        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT
-        ) {
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean {
-                val fromPos = viewHolder.adapterPosition
-                val toPos = target.adapterPosition
-                if (fromPos == RecyclerView.NO_POSITION || toPos == RecyclerView.NO_POSITION) return false
-                adapter.swapItems(fromPos, toPos)
+        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
+            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+                adapter.swapItems(viewHolder.adapterPosition, target.adapterPosition) { updatedOrders ->
+                    viewModel.updateMultipleItemsOrder(updatedOrders)
+                }
                 return true
             }
 
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val position = viewHolder.adapterPosition
-                val item = adapter.currentItems()[position]
 
-                AlertDialog.Builder(requireContext())
-                    .setTitle("מחיקת מוצר")
-                    .setMessage("האם את/ה בטוח/ה שברצונך למחוק את '${item.name}'?")
-                    .setPositiveButton("מחק") { _, _ ->
-                        viewModel.deleteItem(item.id)
-                    }
-                    .setNegativeButton("ביטול") { dialog, _ ->
-                        dialog.dismiss()
-                        adapter.notifyItemChanged(position)
-                    }
-                    .setCancelable(false)
-                    .show()
-            }
-
-            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
-                super.clearView(recyclerView, viewHolder)
-                adapter.currentItems().forEachIndexed { index, item ->
-                    viewModel.updateItemOrder(item.id, index)
-                }
-            }
-
-            override fun onChildDraw(
-                c: Canvas,
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                dX: Float,
-                dY: Float,
-                actionState: Int,
-                isCurrentlyActive: Boolean
-            ) {
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-
-                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-                    val itemView = viewHolder.itemView
-                    val paint = Paint().apply {
-                        color = ContextCompat.getColor(requireContext(), android.R.color.holo_red_light)
-                    }
-
-                    c.drawRect(
-                        itemView.right + dX, itemView.top.toFloat(),
-                        itemView.right.toFloat(), itemView.bottom.toFloat(), paint
-                    )
-
-                    val icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_delete)
-                    icon?.let {
-                        val iconMargin = (itemView.height - it.intrinsicHeight) / 2
-                        val iconTop = itemView.top + iconMargin
-                        val iconLeft = itemView.right - iconMargin - it.intrinsicWidth
-                        val iconRight = itemView.right - iconMargin
-                        val iconBottom = iconTop + it.intrinsicHeight
-
-                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                        it.draw(c)
-                    }
-                }
-            }
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
         })
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
 
-        binding.btnAddItem.setOnClickListener {
-            showAddItemDialog()
-        }
-
         viewModel.itemsList.observe(viewLifecycleOwner) { items ->
             try {
-                Log.d("ShoppingItems", "items loaded: ${items.size}")
-                val sorted = items.map { it.toShoppingItem() }.sortedBy { it.order }
-                Log.d("ShoppingItems", "items mapped and sorted")
-                adapter.updateItems(sorted)
-                Log.d("ShoppingItems", "adapter updated")
+                val shoppingItems = items.map { it.toShoppingItem() }
+
+                val notPurchased = shoppingItems.filter { !it.purchased }
+                val purchased = shoppingItems.filter { it.purchased }
+
+                val grouped = notPurchased
+                    .filter { it.category.isNotBlank() }
+                    .groupBy { it.category }
+
+                val displayList = mutableListOf<ShoppingListItem>()
+
+                grouped.forEach { (category, itemsInCategory) ->
+                    displayList.add(ShoppingListItem.CategoryHeader(category))
+                    itemsInCategory.sortedBy { it.order }.forEach { item ->
+                        displayList.add(ShoppingListItem.ShoppingProduct(item))
+                    }
+                }
+
+                // הוספת כותרת מיוחדת לנקנו
+                if (purchased.isNotEmpty()) {
+                    displayList.add(ShoppingListItem.CategoryHeader("נקנו"))
+                    purchased.sortedBy { it.order }.forEach { item ->
+                        displayList.add(ShoppingListItem.ShoppingProduct(item))
+                    }
+                }
+
+                adapter.updateItems(displayList)
             } catch (e: Exception) {
                 Log.e("ShoppingItems", "שגיאה בטעינת פריטים: ${e.message}", e)
             }
         }
 
+
+        binding.btnAddItem.setOnClickListener { showAddItemDialog() }
+    }
+
+    private fun clearInputFields(item: ShoppingItem) {
+        val index = adapter.currentItems().indexOfFirst {
+            it is ShoppingListItem.ShoppingProduct && it.item.id == item.id
+        }
+        if (index != -1) {
+            (adapter.currentItems()[index] as? ShoppingListItem.ShoppingProduct)?.item?.apply {
+                previewImageBitmap = null
+            }
+            adapter.notifyItemChanged(index)
+        }
+    }
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_participants -> {
+                rememberedListId?.let {
+                    val action = ShoppingItemsFragmentDirections.actionShoppingItemsFragmentToParticipantsFragment(it)
+                    findNavController().navigate(action)
+                }
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun requestCameraPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             openCamera()
         } else {
             requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -239,7 +204,6 @@ class ShoppingItemsFragment : Fragment() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) openCamera()
-        else Toast.makeText(requireContext(), "יש לאשר הרשאת מצלמה", Toast.LENGTH_SHORT).show()
     }
 
     private fun openCamera() {
@@ -247,141 +211,92 @@ class ShoppingItemsFragment : Fragment() {
         cameraLauncher.launch(intent)
     }
 
-    val cameraLauncher = registerForActivityResult(
+    private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val imageBitmap = result.data?.extras?.get("data") as? Bitmap
             imageBitmap?.let {
-                val rotated = rotateBitmapIfRequired(it)
-                pendingImageBitmap = rotated
-
-                // מציגים רק לאחר לחיצה על שליחה – כמו בגלריה
-                val currentList = adapter.currentItems().toMutableList()
-                val index = currentList.indexOfFirst { item -> item.id == currentItemId }
-                if (index != -1) {
-                    currentList[index].previewImageBitmap = rotated
-                    currentList[index].expanded = true
-                    adapter.updateItems(currentList)
-                    binding.recyclerView.scrollToPosition(index)
-                }
-
-                Toast.makeText(requireContext(), "תמונה מוכנה לשליחה", Toast.LENGTH_SHORT).show()
+                pendingImageBitmap = rotateBitmapIfRequired(it)
+                updatePreviewImage(pendingImageBitmap)
             }
         }
     }
-
-
 
     private fun openGallery() {
         galleryLauncher.launch("image/*")
     }
-    val galleryLauncher = registerForActivityResult(
+
+    private val galleryLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, it)
             pendingImageUri = it
-
-            val currentList = adapter.currentItems().toMutableList()
-            val index = currentList.indexOfFirst { item -> item.id == currentItemId }
-            if (index != -1) {
-                currentList[index].previewImageBitmap = bitmap
-                currentList[index].expanded = true
-                adapter.notifyItemChanged(index) // ✅ גם כאן
-                binding.recyclerView.scrollToPosition(index)
-            }
-
-            Toast.makeText(requireContext(), "תמונה מוכנה לשליחה", Toast.LENGTH_SHORT).show()
+            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, it)
+            pendingImageBitmap = bitmap
+            updatePreviewImage(bitmap)
         }
     }
 
-
-    private fun rotateBitmapIfRequired(bitmap: Bitmap, uri: Uri? = null): Bitmap {
-        val ei = uri?.let {
-            requireContext().contentResolver.openInputStream(it)?.use { input ->
-                androidx.exifinterface.media.ExifInterface(input)
-            }
-        } ?: return bitmap
-
-        val orientation = ei.getAttributeInt(
-            androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,
-            androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL
-        )
-
-        val rotation = when (orientation) {
-            androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-            androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-            androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-            else -> 0f
+    private fun updatePreviewImage(bitmap: Bitmap?) {
+        val index = adapter.currentItems().indexOfFirst {
+            it is ShoppingListItem.ShoppingProduct && it.item.id == currentItemId
         }
-
-        return if (rotation != 0f) {
-            val matrix = Matrix().apply { postRotate(rotation) }
-            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-        } else bitmap
+        if (index != -1 && bitmap != null) {
+            (adapter.currentItems()[index] as? ShoppingListItem.ShoppingProduct)?.item?.previewImageBitmap = bitmap
+            adapter.notifyItemChanged(index)
+        }
     }
 
     private fun sendPendingImageIfNeeded() {
         val itemId = currentItemId ?: return
 
-        // קודם שולחים את ה-URI אם קיים
         pendingImageUri?.let {
-            Log.d("DEBUG", "שולחת תמונה מ־Uri לפריט: $itemId")
             viewModel.uploadMessageImageFromUri(itemId, it)
             pendingImageUri = null
         }
 
-        // ואז אם יש Bitmap (מהמצלמה), שולחים אותו
         pendingImageBitmap?.let {
-            Log.d("DEBUG", "שולחת תמונה מ־Bitmap לפריט: $itemId")
-            try {
-                val baos = ByteArrayOutputStream()
-                it.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-                viewModel.uploadMessageImageFromBytes(itemId, baos.toByteArray())
-            } catch (e: Exception) {
-                Log.e("DEBUG", "שגיאה בהעלאת Bitmap: ${e.message}")
-            }
+            val baos = ByteArrayOutputStream()
+            it.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+            viewModel.uploadMessageImageFromBytes(itemId, baos.toByteArray())
             pendingImageBitmap = null
         }
-
-        Log.d("DEBUG", "סיימנו לשלוח תמונות לפריט: $itemId – נשארים באותו מסך ✅")
     }
 
-
-
-    private fun uploadMessageImage(uri: Uri) {
-        currentItemId?.let { itemId ->
-            viewModel.uploadMessageImageFromUri(itemId, uri)
-        }
-    }
-
-    private fun uploadMessageImage(imageBitmap: Bitmap) {
-        currentItemId?.let { itemId ->
-            val baos = ByteArrayOutputStream()
-            imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-            val imageData = baos.toByteArray()
-            viewModel.uploadMessageImageFromBytes(itemId, imageData)
-        }
+    private fun rotateBitmapIfRequired(bitmap: Bitmap, uri: Uri? = null): Bitmap {
+        return bitmap
     }
 
     private fun showAddItemDialog() {
-        val editText = EditText(requireContext()).apply {
-            hint = "Enter item name"
-        }
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
+        val editTextName = dialogView.findViewById<EditText>(R.id.editTextItemName)
+        val spinnerCategory = dialogView.findViewById<Spinner>(R.id.spinnerCategory)
+
+        val categories = loadCategoriesFromAssets(requireContext())
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories.map { it.name })
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerCategory.adapter = adapter
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Add Item")
-            .setView(editText)
-            .setPositiveButton("Add") { _, _ ->
-                val itemName = editText.text.toString().trim()
+            .setTitle("\u05d4\u05d5\u05e1\u05e4\u05ea \u05de\u05d5\u05e6\u05e8 \u05d7\u05d3\u05e9")
+            .setView(dialogView)
+            .setPositiveButton("\u05d4\u05d5\u05e1\u05e3") { _, _ ->
+                val itemName = editTextName.text.toString().trim()
+                val selectedCategory = spinnerCategory.selectedItem.toString()
                 if (itemName.isNotEmpty()) {
-                    viewModel.addItemToFirebase(itemName)
+                    viewModel.addItemToFirebase(itemName, selectedCategory)
                 } else {
-                    Toast.makeText(requireContext(), "Item name cannot be empty", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "\u05e9\u05dd \u05d4\u05de\u05d5\u05e6\u05e8 \u05dc\u05d0 \u05d9\u05db\u05d5\u05dc \u05dc\u05d4\u05d9\u05d5\u05ea \u05e8\u05d9\u05e7", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("\u05d1\u05d9\u05d8\u05d5\u05dc", null)
             .show()
+    }
+
+    private fun loadCategoriesFromAssets(context: Context): List<Category> {
+        val jsonString = context.assets.open("categories.json").bufferedReader().use { it.readText() }
+        val listType = object : TypeToken<List<Category>>() {}.type
+        return Gson().fromJson(jsonString, listType)
     }
 }

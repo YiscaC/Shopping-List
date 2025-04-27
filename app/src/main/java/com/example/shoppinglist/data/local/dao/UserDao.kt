@@ -18,7 +18,8 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE uid IN (:uids)")
     suspend fun getUsersByUidsOnce(uids: List<String>): List<UserEntity>
-
+    @Query("DELETE FROM users WHERE uid = :uid")
+    fun deleteUserById(uid: String)
 
 
 }

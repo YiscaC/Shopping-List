@@ -3,7 +3,7 @@
 
     <item
         android:id="@+id/shoppingListFragment"
-        android:icon="@drawable/ic_list"
+        android:icon="@drawable/ic_cart"
         android:title="רשימות" />
 
     <item
@@ -11,14 +11,6 @@
         android:icon="@drawable/ic_person"
         android:title="פרופיל" />
 
-    <item
-        android:id="@+id/shoppingItemsFragment"
-        android:icon="@drawable/ic_cart"
-        android:title="פריטים" />
 
-    <item
-        android:id="@+id/participantsFragment"
-        android:icon="@drawable/ic_people"
-        android:title="משתתפים" />
 
 </menu>
