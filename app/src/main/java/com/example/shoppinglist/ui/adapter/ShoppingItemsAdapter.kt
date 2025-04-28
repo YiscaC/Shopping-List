@@ -12,6 +12,7 @@ import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.shoppinglist.R
 import com.example.shoppinglist.data.local.models.ShoppingItem
 import com.example.shoppinglist.data.local.models.ShoppingListItem
@@ -76,12 +77,17 @@ class ShoppingItemsAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        when (val item = items[position]) {
-            is ShoppingListItem.CategoryHeader -> {
-                (holder as CategoryHeaderViewHolder).categoryName.text = item.categoryName
-            }
-            is ShoppingListItem.ShoppingProduct -> {
-                bindProduct(holder as ShoppingProductViewHolder, item.item)
+        val item = items[position]
+        if (item is ShoppingListItem.ShoppingProduct) {
+            holder.itemView.findViewById<TextView>(R.id.itemName).text = item.item.name
+
+            val productImageView = holder.itemView.findViewById<ImageView>(R.id.productImageView)
+            if (!item.item.imageUrl.isNullOrEmpty()) {
+                Glide.with(holder.itemView)
+                    .load(item.item.imageUrl)
+                    .into(productImageView)
+            } else {
+                productImageView.setImageResource(R.drawable.image_placeholder)
             }
         }
     }

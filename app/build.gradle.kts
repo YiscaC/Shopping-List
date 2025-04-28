@@ -66,6 +66,7 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx") // Storage (לשמירת תמונות)
     implementation("com.google.firebase:firebase-database-ktx") // ✅ Realtime Database
     implementation ("androidx.room:room-runtime:2.6.1")
+    implementation(libs.volley)
     kapt ("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     implementation ("com.google.code.gson:gson:2.9.0")
@@ -83,4 +84,15 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation ("de.hdodenhof:circleimageview:3.1.0")
 
+    // Retrofit for making API requests
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // Glide to load images
+    implementation ("com.github.bumptech.glide:glide:4.15.1")
+    kapt("com.github.bumptech.glide:compiler:4.15.1")
+    implementation("com.android.volley:volley:1.2.1")
+
 }
+
+

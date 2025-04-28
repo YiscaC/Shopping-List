@@ -13,7 +13,8 @@ data class ShoppingItem(
     var order: Int = 0,
     var messages: List<Message> = emptyList(), // ✅ הוספת הודעות לפריט
     var previewImageBitmap: Bitmap? = null,
-    var category: String = ""
+    var category: String = "",
+    var imageUrl: String= ""
 
 
 )

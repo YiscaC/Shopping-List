@@ -36,6 +36,13 @@ import com.example.shoppinglist.viewmodel.ShoppingItemsViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.ByteArrayOutputStream
+import android.text.TextWatcher
+import android.text.Editable
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import com.bumptech.glide.Glide
+import org.json.JSONObject
+
 
 private var pendingImageUri: Uri? = null
 private var pendingImageBitmap: Bitmap? = null
@@ -49,6 +56,7 @@ class ShoppingItemsFragment : Fragment() {
 
     private lateinit var adapter: ShoppingItemsAdapter
     private var currentItemId: String? = null
+    private var selectedImageUrl: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -276,6 +284,19 @@ class ShoppingItemsFragment : Fragment() {
     private fun showAddItemDialog() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
         val editTextName = dialogView.findViewById<EditText>(R.id.editTextItemName)
+
+        editTextName.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {}
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s.toString()
+                if (query.length > 2) { // אחרי 3 אותיות לפחות
+                    searchImageFromPexels(query,dialogView)
+                }
+            }
+        })
         val spinnerCategory = dialogView.findViewById<Spinner>(R.id.spinnerCategory)
 
         val categories = loadCategoriesFromAssets(requireContext())
@@ -289,8 +310,9 @@ class ShoppingItemsFragment : Fragment() {
             .setPositiveButton("\u05d4\u05d5\u05e1\u05e3") { _, _ ->
                 val itemName = editTextName.text.toString().trim()
                 val selectedCategory = spinnerCategory.selectedItem.toString()
+
                 if (itemName.isNotEmpty()) {
-                    viewModel.addItemToFirebase(itemName, selectedCategory)
+                    viewModel.addItemToFirebase(itemName, selectedCategory, selectedImageUrl?:"")
                 } else {
                     Toast.makeText(requireContext(), "\u05e9\u05dd \u05d4\u05de\u05d5\u05e6\u05e8 \u05dc\u05d0 \u05d9\u05db\u05d5\u05dc \u05dc\u05d4\u05d9\u05d5\u05ea \u05e8\u05d9\u05e7", Toast.LENGTH_SHORT).show()
                 }
@@ -303,5 +325,56 @@ class ShoppingItemsFragment : Fragment() {
         val jsonString = context.assets.open("categories.json").bufferedReader().use { it.readText() }
         val listType = object : TypeToken<List<Category>>() {}.type
         return Gson().fromJson(jsonString, listType)
+    }
+    private fun searchImageFromPexels(query: String, dialogView: View) {
+        val apiKey = "nhBkDpt4ksLOFvFHyI8p2T8mOg9clsEW8x9shY9K6YfEYlIpmDCf9WkM"
+        val url = "https://api.pexels.com/v1/search?query=$query&per_page=1"
+
+        // יצירת בקשה ב-Volley
+        val request = object : StringRequest(
+            Method.GET, url,
+            { response ->
+                val jsonObject = JSONObject(response)
+                val photosArray = jsonObject.getJSONArray("photos")
+                if (photosArray.length() > 0) {
+                    val firstPhoto = photosArray.getJSONObject(0)
+                    val src = firstPhoto.getJSONObject("src")
+                    val imageUrl = src.getString("medium")
+                    selectedImageUrl=imageUrl
+                    // בדוק אם ה-URL לא ריק או null
+                    if (imageUrl.isNullOrEmpty()) {
+                        Log.e("PEXELS", "תמונה לא נמצאה או ה-URL ריק")
+                    } else {
+                        loadImage(imageUrl, dialogView)  // אם התמונה נמצאה, נטען אותה
+                    }
+                } else {
+                    Log.e("PEXELS", "לא נמצאו תמונות עבור השאילתה")
+                }
+            },
+            { error ->
+                Log.e("PEXELS", "Error fetching image: ${error.message}")
+            }
+        ) {
+            override fun getHeaders(): MutableMap<String, String> {
+                val headers = HashMap<String, String>()
+                headers["Authorization"] = apiKey
+                return headers
+            }
+        }
+
+        // הוספת הבקשה ל-Volley RequestQueue
+        Volley.newRequestQueue(requireContext()).add(request)
+    }
+
+
+    private fun loadImage(url: String, dialogView: View) {
+        val productImageView = dialogView.findViewById<ImageView>(R.id.productImageView)
+        if (productImageView != null) {
+            Glide.with(this)
+                .load(url)
+                .into(productImageView)
+        } else {
+            Log.e("LOAD_IMAGE", "productImageView is NULL")
+        }
     }
 }

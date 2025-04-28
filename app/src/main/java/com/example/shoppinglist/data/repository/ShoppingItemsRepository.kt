@@ -80,7 +80,7 @@ class ShoppingItemsRepository(context: Context) {
         shoppingItemDao.updateItemOrder(itemId, newOrder)
     }
 
-    suspend fun addItemToFirebase(listId: String, itemName: String, category: String) {
+    suspend fun addItemToFirebase(listId: String, itemName: String, category: String,imageUrl: String) {
         val newItemId = db.child(listId).child("items").push().key ?: return
         val newItem = ShoppingItemEntity(
             id = newItemId,
@@ -90,7 +90,8 @@ class ShoppingItemsRepository(context: Context) {
             purchased = false,
             order = 0,
             messages = emptyList(),
-            category = category // ✅ הוספתי את הקטגוריה פה
+            category = category, // ✅ הוספתי את הקטגוריה פה
+            imageUrl = imageUrl
         )
 
         db.child(listId).child("items").child(newItemId).setValue(newItem)

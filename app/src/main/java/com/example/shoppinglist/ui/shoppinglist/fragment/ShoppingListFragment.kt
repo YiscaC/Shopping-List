@@ -50,7 +50,7 @@ class ShoppingListFragment : Fragment() {
 
         if (FirebaseAuth.getInstance().currentUser == null) {
             Toast.makeText(requireContext(), "⚠ אין חיבור משתמש. אנא התחבר.", Toast.LENGTH_SHORT).show()
-            findNavController().navigate(com.example.shoppinglist.R.id.action_shoppingListFragment_to_loginFragment)
+            findNavController().navigate(com.example.shoppinglist.R.id.loginFragment)
             return
         }
 

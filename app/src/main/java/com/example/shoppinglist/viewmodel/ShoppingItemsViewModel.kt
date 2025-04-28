@@ -54,9 +54,9 @@ class ShoppingItemsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun addItemToFirebase(itemName: String, category: String) {
+    fun addItemToFirebase(itemName: String, category: String, imageUrl:String) {
         viewModelScope.launch {
-            repository.addItemToFirebase(listId, itemName, category)
+            repository.addItemToFirebase(listId, itemName, category,imageUrl)
         }
     }
 
