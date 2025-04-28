@@ -15,6 +15,7 @@
         android:background="@color/green"
         app:layout_constraintTop_toTopOf="parent"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        android:gravity="center"
         app:title="Shopping List" />
 
     <!-- NavHostFragment -->

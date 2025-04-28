@@ -42,4 +42,25 @@ class ShoppingListViewModel(application: Application) : AndroidViewModel(applica
     suspend fun getShoppingListById(listId: String): ShoppingListEntity? {
         return repository.getShoppingListById(listId)
     }
+
+    // ✅ חדש - עדכון שם רשימה
+    fun updateShoppingListName(listId: String, newName: String) {
+        viewModelScope.launch {
+            repository.updateShoppingListName(listId, newName)
+        }
+    }
+
+    // ✅ חדש - מחיקת רשימה
+    fun deleteShoppingList(listId: String) {
+        viewModelScope.launch {
+            repository.deleteShoppingList(listId)
+        }
+    }
+
+    // ✅ חדש - יציאה מרשימה
+    fun leaveShoppingList(listId: String) {
+        viewModelScope.launch {
+            repository.leaveShoppingList(listId)
+        }
+    }
 }

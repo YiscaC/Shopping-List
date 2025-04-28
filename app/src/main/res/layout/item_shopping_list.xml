@@ -1,41 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    card_view:cardCornerRadius="16dp"
-    card_view:cardElevation="6dp">
+    app:cardCornerRadius="16dp"
+    app:cardElevation="6dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:layoutDirection="rtl"> <!-- כיוון לעברית -->
+        android:layoutDirection="rtl">
 
-
-        <!-- שם הרשימה -->
-        <TextView
-            android:id="@+id/listName"
+        <!-- שורה של שם רשימה + שלושה כפתורים -->
+        <LinearLayout
+            android:id="@+id/titleLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="שם הרשימה"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textAlignment="viewStart"
-            android:textColor="#000000" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/listName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="שם הרשימה"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textAlignment="viewStart"
+                android:textColor="#000000" />
+
+            <ImageButton
+                android:id="@+id/btnEditList"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/round_button_background"
+                android:src="@drawable/ic_edit"
+                android:contentDescription="ערוך רשימה"
+                android:layout_marginStart="8dp" />
+
+
+
+            <ImageButton
+                android:id="@+id/btnDeleteList"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/round_button_background"
+                android:src="@drawable/ic_delete2"
+                android:contentDescription="מחק רשימה"
+                android:layout_marginStart="8dp" />
+            <ImageButton
+                android:id="@+id/btnLeaveList"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/round_button_background"
+                android:src="@drawable/ic_exit"
+                android:contentDescription="צא מהרשימה"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
 
         <!-- משתתפים + כפתור הוספה -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:orientation="horizontal"
             android:gravity="start|center_vertical">
 
-            <!-- Scroll אופקי של תמונות המשתתפים -->
             <HorizontalScrollView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -50,7 +85,6 @@
                     android:gravity="center_vertical" />
             </HorizontalScrollView>
 
-            <!-- כפתור הוספה -->
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/btnAddParticipant"
                 android:layout_width="40dp"
@@ -60,7 +94,6 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_add_user"
                 android:contentDescription="@null" />
-
         </LinearLayout>
 
     </LinearLayout>

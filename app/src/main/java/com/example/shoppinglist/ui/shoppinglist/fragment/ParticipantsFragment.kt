@@ -58,6 +58,7 @@ class ParticipantsFragment : Fragment() {
         binding.participantsRecyclerView.adapter = adapter
     }
 
+
     private fun loadParticipants() {
         viewModel.getShoppingListById(listId) { shoppingList ->
             if (shoppingList == null) {
@@ -71,18 +72,17 @@ class ParticipantsFragment : Fragment() {
             adapter.currentOwnerId = ownerId
             adapter.notifyDataSetChanged()
 
-            // קודם מנסים להביא מה-ROOM
+            // קודם מציגים מה שיש ברום
             viewModel.getParticipantsOnce(uids) { localUsers ->
-                if (localUsers.isNotEmpty()) {
-                    adapter.submitList(localUsers)
-                } else {
-                    // אם אין ברום - מביאים מפיירבייס
-                    viewModel.fetchUsersFromFirebase(uids) { remoteUsers ->
-                        adapter.submitList(remoteUsers)
-                    }
+                adapter.submitList(localUsers)
+
+                // ואז תמיד מנסים לעדכן מפיירבייס
+                viewModel.fetchUsersFromFirebase(uids) { remoteUsers ->
+                    adapter.submitList(remoteUsers)
                 }
             }
         }
     }
+
 
 }

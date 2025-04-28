@@ -77,6 +77,15 @@ class ShoppingListFragment : Fragment() {
                 } else {
                     Toast.makeText(requireContext(), "⚠ אין חיבור לאינטרנט. לא ניתן להוסיף משתתף.", Toast.LENGTH_SHORT).show()
                 }
+            },
+            onEditListClick = { selectedList ->
+                showEditListDialog(selectedList)
+            },
+            onDeleteListClick = { selectedList ->
+                confirmDeleteList(selectedList)
+            },
+            onLeaveListClick = { selectedList ->
+                confirmLeaveList(selectedList)
             }
         )
 
@@ -164,7 +173,6 @@ class ShoppingListFragment : Fragment() {
             .show()
     }
 
-
     private fun fetchParticipantImages(uids: Set<String>, callback: (Map<String, String>) -> Unit) {
         val imagesMap = mutableMapOf<String, String>()
         val tasksToWait = uids.size
@@ -200,5 +208,46 @@ class ShoppingListFragment : Fragment() {
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
+    private fun showEditListDialog(list: ShoppingList) {
+        val input = EditText(requireContext())
+        input.setText(list.name)
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("עריכת רשימה")
+            .setView(input)
+            .setPositiveButton("שמור") { _, _ ->
+                val newName = input.text.toString().trim()
+                if (newName.isNotEmpty() && newName != list.name) {
+                    viewModel.updateShoppingListName(list.id, newName)
+                } else {
+                    Toast.makeText(requireContext(), "⚠ לא בוצע שינוי בשם", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("ביטול", null)
+            .show()
+    }
+
+    private fun confirmDeleteList(list: ShoppingList) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("מחיקת רשימה")
+            .setMessage("האם אתה בטוח שברצונך למחוק את הרשימה '${list.name}'?")
+            .setPositiveButton("מחק") { _, _ ->
+                viewModel.deleteShoppingList(list.id)
+            }
+            .setNegativeButton("ביטול", null)
+            .show()
+    }
+
+    private fun confirmLeaveList(list: ShoppingList) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("יציאה מרשימה")
+            .setMessage("האם אתה בטוח שברצונך לצאת מהרשימה '${list.name}'?")
+            .setPositiveButton("צא") { _, _ ->
+                viewModel.leaveShoppingList(list.id)
+            }
+            .setNegativeButton("ביטול", null)
+            .show()
     }
 }

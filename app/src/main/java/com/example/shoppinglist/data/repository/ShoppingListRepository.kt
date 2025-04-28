@@ -19,12 +19,12 @@ class ShoppingListRepository(context: Context) {
 
     private val userId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
 
-    // ✅ מביא רק מה-Room
+    // ✅ מביא רשימות לוקאליות
     fun getUserShoppingLists(): LiveData<List<ShoppingListEntity>> {
         return shoppingListDao.getUserShoppingLists(userId)
     }
 
-    // ✅ מרענן מהפיירבייס ושומר ל-ROOM
+    // ✅ מרענן רשימות מהפיירבייס ושומר ב-ROOM
     suspend fun refreshShoppingLists() {
         try {
             val snapshot = db.get().await()
@@ -60,7 +60,7 @@ class ShoppingListRepository(context: Context) {
         }
     }
 
-    // ✅ יצירת רשימה חדשה - גם ב-Firebase וגם ב-Room
+    // ✅ יצירת רשימה חדשה
     suspend fun createShoppingList(name: String) {
         val newListId = db.push().key ?: return
         val newList = ShoppingListEntity(
@@ -77,17 +77,17 @@ class ShoppingListRepository(context: Context) {
         db.child(newListId).setValue(newList)
     }
 
-    // ✅ מביא רשימה ספציפית לפי מזהה מ-ROOM
+    // ✅ מביא רשימה ספציפית מה-ROOM
     suspend fun getShoppingListById(listId: String): ShoppingListEntity? {
         return withContext(Dispatchers.IO) {
             shoppingListDao.getListById(listId)
         }
     }
 
-    // ✅ הוספת משתתף בגרסה שעבדה לך ✔
+    // ✅ הוספת משתתף
     suspend fun addParticipant(listId: String, participantEmail: String): Boolean {
         val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: return false
-        if (participantEmail == currentUserEmail) return false // ❌ לא מוסיפים את עצמנו
+        if (participantEmail == currentUserEmail) return false // לא מוסיפים את עצמנו
 
         return try {
             val allUsersSnapshot = usersRef.get().await()
@@ -126,4 +126,46 @@ class ShoppingListRepository(context: Context) {
             false
         }
     }
+
+    // ✅ חדש - עדכון שם רשימה
+    suspend fun updateShoppingListName(listId: String, newName: String) {
+        withContext(Dispatchers.IO) {
+            val list = shoppingListDao.getListById(listId) ?: return@withContext
+            val updatedList = list.copy(name = newName)
+            shoppingListDao.updateList(updatedList)
+        }
+        db.child(listId).child("name").setValue(newName)
+    }
+
+    // ✅ חדש - מחיקת רשימה
+    suspend fun deleteShoppingList(listId: String) {
+        withContext(Dispatchers.IO) {
+            shoppingListDao.deleteListById(listId)
+        }
+        db.child(listId).removeValue()
+    }
+
+    // ✅ חדש - יציאה מרשימה
+    suspend fun leaveShoppingList(listId: String) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val list = shoppingListDao.getListById(listId) ?: return
+
+        if (list.ownerId == userId) {
+            // המשתמש הוא המנהל - נמחק את כל הרשימה
+            withContext(Dispatchers.IO) {
+                shoppingListDao.deleteListById(listId)
+            }
+            db.child(listId).removeValue()
+        } else {
+            // המשתמש הוא משתתף - נסיר אותו מהמשתתפים
+            withContext(Dispatchers.IO) {
+                val updatedParticipants = list.participants.toMutableMap()
+                updatedParticipants.remove(userId)
+                val updatedList = list.copy(participants = updatedParticipants)
+                shoppingListDao.updateList(updatedList)
+            }
+            db.child(listId).child("participants").child(userId).removeValue()
+        }
+    }
+
 }

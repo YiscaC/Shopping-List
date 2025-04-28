@@ -124,9 +124,14 @@ class ShoppingItemsFragment : Fragment() {
                 }
                 return true
             }
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val item = adapter.currentItems().getOrNull(position)
 
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+                if (item is ShoppingListItem.ShoppingProduct) {
+                    viewModel.deleteItem(item.item.id)
+                }
+            }
         })
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
 
