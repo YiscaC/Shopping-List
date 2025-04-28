@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,17 +17,20 @@ import com.example.shoppinglist.viewmodel.ShoppingListViewModel
 import com.example.shoppinglist.data.local.models.ShoppingList
 import com.example.shoppinglist.viewmodel.SharedShoppingListViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
+import com.google.firebase.database.FirebaseDatabase
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 
 class ShoppingListFragment : Fragment() {
 
     private lateinit var binding: FragmentShoppingListBinding
     private val viewModel: ShoppingListViewModel by viewModels()
-    private val sharedViewModel: SharedShoppingListViewModel by activityViewModels()
+    private val sharedViewModel: SharedShoppingListViewModel by viewModels()
 
     private lateinit var adapter: ShoppingListAdapter
 
-    private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    private val currentUserId: String
+        get() = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     private val usersRef = FirebaseDatabase.getInstance().reference.child("users")
     private val participantImages = mutableMapOf<String, String>()
 
@@ -42,6 +44,22 @@ class ShoppingListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            Toast.makeText(requireContext(), "⚠ אין חיבור משתמש. אנא התחבר.", Toast.LENGTH_SHORT).show()
+            findNavController().navigate(com.example.shoppinglist.R.id.action_shoppingListFragment_to_loginFragment)
+            return
+        }
+
+        setupRecyclerView()
+        observeShoppingLists()
+        viewModel.refreshShoppingLists()
+    }
+
+    private fun setupRecyclerView() {
         adapter = ShoppingListAdapter(
             listOf(),
             participantImages,
@@ -54,7 +72,11 @@ class ShoppingListFragment : Fragment() {
                 findNavController().navigate(action)
             },
             onAddParticipantClick = { selectedList ->
-                showAddParticipantDialog(selectedList.id)
+                if (hasInternetConnection()) {
+                    showAddParticipantDialog(selectedList.id)
+                } else {
+                    Toast.makeText(requireContext(), "⚠ אין חיבור לאינטרנט. לא ניתן להוסיף משתתף.", Toast.LENGTH_SHORT).show()
+                }
             }
         )
 
@@ -64,16 +86,6 @@ class ShoppingListFragment : Fragment() {
         binding.btnAddList.setOnClickListener {
             showAddListDialog()
         }
-
-        binding.swipeRefreshLayout.setOnRefreshListener {
-            viewModel.refreshShoppingLists()
-        }
-
-        observeShoppingLists()
-
-        sharedViewModel.refreshShoppingLists.observe(viewLifecycleOwner) {
-            viewModel.refreshShoppingLists()
-        }
     }
 
     private fun observeShoppingLists() {
@@ -82,17 +94,19 @@ class ShoppingListFragment : Fragment() {
                 it.ownerId == currentUserId || it.participants.containsKey(currentUserId)
             }
 
-            val uidsToFetch = userLists.flatMap { it.participants.keys }.toSet()
+            val shoppingModels = userLists.map {
+                ShoppingList(it.id, it.name, it.ownerId, it.participants)
+            }
 
-            fetchParticipantImages(uidsToFetch) { images ->
-                participantImages.clear()
-                participantImages.putAll(images)
+            adapter.updateLists(shoppingModels, participantImages)
 
-                val shoppingModels = userLists.map {
-                    ShoppingList(it.id, it.name, it.ownerId, it.participants)
+            if (hasInternetConnection()) {
+                val uidsToFetch = userLists.flatMap { it.participants.keys }.toSet()
+                fetchParticipantImages(uidsToFetch) { images ->
+                    participantImages.clear()
+                    participantImages.putAll(images)
+                    adapter.updateLists(shoppingModels, participantImages)
                 }
-                adapter.updateLists(shoppingModels, participantImages)
-                binding.swipeRefreshLayout.isRefreshing = false // להפסיק את הספינר אחרי טעינה
             }
         }
     }
@@ -143,7 +157,6 @@ class ShoppingListFragment : Fragment() {
             .show()
     }
 
-    // שליפת כתובת תמונה לכל UID
     private fun fetchParticipantImages(uids: Set<String>, callback: (Map<String, String>) -> Unit) {
         val imagesMap = mutableMapOf<String, String>()
         val tasksToWait = uids.size
@@ -170,5 +183,14 @@ class ShoppingListFragment : Fragment() {
                     }
                 }
         }
+    }
+
+    private fun hasInternetConnection(): Boolean {
+        val connectivityManager = context?.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val activeNetwork = connectivityManager?.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
     }
 }

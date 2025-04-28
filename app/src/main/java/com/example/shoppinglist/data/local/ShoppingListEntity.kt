@@ -8,8 +8,8 @@ import com.example.shoppinglist.data.local.converters.ParticipantsConverter
 @Entity(tableName = "shopping_lists")
 @TypeConverters(ParticipantsConverter::class)
 data class ShoppingListEntity(
-    @PrimaryKey val id: String,
-    val name: String,
-    val ownerId: String, // ✅ שמירת ה- UID של היוזר המחובר
+    @PrimaryKey val id: String = "",
+    val name: String = "",
+    val ownerId: String = "",
     val participants: Map<String, Boolean> = emptyMap()
 )

@@ -15,6 +15,7 @@
         android:padding="16dp"
         android:layoutDirection="rtl"> <!-- כיוון לעברית -->
 
+
         <!-- שם הרשימה -->
         <TextView
             android:id="@+id/listName"

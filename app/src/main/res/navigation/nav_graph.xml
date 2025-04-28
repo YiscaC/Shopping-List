@@ -32,6 +32,9 @@
         android:id="@+id/shoppingListFragment"
         android:name="com.example.shoppinglist.ui.shoppinglist.fragment.ShoppingListFragment"
         android:label="Shopping List">
+        <action
+            android:id="@+id/action_shoppingListFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
 
         <action
             android:id="@+id/action_shoppingListFragment_to_shoppingItemsFragment"

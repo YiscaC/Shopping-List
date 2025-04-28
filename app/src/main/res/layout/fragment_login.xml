@@ -7,7 +7,8 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="24dp"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:layoutDirection="rtl">
 
     <!-- שדה אימייל עם אייקון -->
     <com.google.android.material.textfield.TextInputLayout
@@ -20,9 +21,10 @@
             android:id="@+id/etEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
+            android:hint="אימייל"
             android:inputType="textEmailAddress"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textAlignment="viewStart" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- שדה סיסמה עם אייקון -->
@@ -38,9 +40,10 @@
             android:id="@+id/etPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
+            android:hint="סיסמה"
             android:inputType="textPassword"
-            android:textSize="16sp"/>
+            android:textSize="16sp"
+            android:textAlignment="viewStart" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- כפתור כניסה -->
@@ -50,17 +53,18 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:backgroundTint="@color/green"
-        android:text="Login"
+        android:text="התחבר"
         android:textColor="@color/white"
-        android:textSize="16sp"/>
+        android:textSize="16sp" />
 
     <!-- טקסט הרשמה עם חלק לחיץ -->
     <TextView
         android:id="@+id/tvSignUp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Don't have an account? Sign Up"
+        android:text="אין לך חשבון? הירשם"
         android:textColor="@color/black"
         android:textSize="14sp"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginTop="12dp"
+        android:textAlignment="viewStart" />
 </LinearLayout>

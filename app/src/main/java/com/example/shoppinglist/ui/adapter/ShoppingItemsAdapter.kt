@@ -1,9 +1,13 @@
 package com.example.shoppinglist.ui.adapter
-
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.content.Context
+
+
 import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -137,24 +141,44 @@ class ShoppingItemsAdapter(
                 return@setOnClickListener
             }
 
-            // שולחים טקסט ותמונה אם קיימים
-            if (hasText) onCommentAdded(item, commentText)
-            if (hasImage) onCommentAdded(item, "")
+            // שולחים פעם אחת בלבד
+            onCommentAdded(item, commentText)
 
-            // ניקוי התמונה והטקסט אחרי שליחה
+            // ניקוי אחרי שליחה
             item.previewImageBitmap = null
             holder.previewImage.setImageBitmap(null)
             holder.previewImage.visibility = View.GONE
             holder.commentInput.text.clear()
 
             holder.messagesAdapter?.notifyDataSetChanged()
-
-            // לא סוגרים את הפריט
             notifyItemChanged(holder.adapterPosition)
         }
 
-        holder.addImageButton.setOnClickListener { onImageAdded(item) }
-        holder.selectFromGalleryButton.setOnClickListener { onGallerySelected(item) }
+        holder.addImageButton.setOnClickListener {
+            if (isNetworkAvailable(holder.itemView.context)) {
+                onImageAdded(item)
+            } else {
+                Toast.makeText(holder.itemView.context, "אין חיבור לאינטרנט - אי אפשר להוסיף תמונה כרגע", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        holder.selectFromGalleryButton.setOnClickListener {
+            if (isNetworkAvailable(holder.itemView.context)) {
+                onGallerySelected(item)
+            } else {
+                Toast.makeText(holder.itemView.context, "אין חיבור לאינטרנט - אי אפשר להעלות תמונה כרגע", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+
+        holder.selectFromGalleryButton.setOnClickListener {
+            if (isNetworkAvailable(holder.itemView.context)) {
+                onGallerySelected(item)
+            } else {
+                Toast.makeText(holder.itemView.context, "אין חיבור לאינטרנט - אי אפשר להעלות תמונה כרגע", Toast.LENGTH_SHORT).show()
+            }
+        }
+
     }
 
     override fun getItemCount(): Int = items.size
@@ -208,6 +232,12 @@ class ShoppingItemsAdapter(
         }
     }
 
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val network = connectivityManager?.activeNetwork
+        val capabilities = connectivityManager?.getNetworkCapabilities(network)
+        return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
 
     fun currentItems(): List<ShoppingListItem> = items
 }

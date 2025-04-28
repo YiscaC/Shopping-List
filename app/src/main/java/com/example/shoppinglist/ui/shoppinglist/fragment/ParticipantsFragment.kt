@@ -1,7 +1,6 @@
 package com.example.shoppinglist.ui.shoppinglist.fragment
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,10 +8,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.shoppinglist.MainActivity
 import com.example.shoppinglist.databinding.FragmentParticipantsBinding
 import com.example.shoppinglist.ui.adapter.ParticipantsAdapter
 import com.example.shoppinglist.viewmodel.ParticipantsViewModel
@@ -20,10 +17,10 @@ import com.example.shoppinglist.viewmodel.ParticipantsViewModelFactory
 import com.example.shoppinglist.viewmodel.SharedShoppingListViewModel
 
 class ParticipantsFragment : Fragment() {
-    private val sharedViewModel: SharedShoppingListViewModel by activityViewModels()
 
     private lateinit var binding: FragmentParticipantsBinding
     private val args: ParticipantsFragmentArgs by navArgs()
+    private val sharedViewModel: SharedShoppingListViewModel by activityViewModels()
     private val viewModel: ParticipantsViewModel by viewModels {
         ParticipantsViewModelFactory(requireContext())
     }
@@ -37,11 +34,8 @@ class ParticipantsFragment : Fragment() {
     ): View {
         binding = FragmentParticipantsBinding.inflate(inflater, container, false)
         listId = args.listId
-        Log.d("ParticipantsFragment", "✅ listId = $listId")
-
         setupRecyclerView()
         loadParticipants()
-
         return binding.root
     }
 
@@ -53,14 +47,13 @@ class ParticipantsFragment : Fragment() {
                     if (success) {
                         Toast.makeText(requireContext(), "🗑️ המשתתף הוסר", Toast.LENGTH_SHORT).show()
                         sharedViewModel.notifyRefresh()
-                        loadParticipants() // ✅ נטען שוב את המשתתפים עצמם
+                        loadParticipants()
                     } else {
                         Toast.makeText(requireContext(), "⚠️ שגיאה במחיקה", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         )
-
         binding.participantsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.participantsRecyclerView.adapter = adapter
     }
@@ -75,15 +68,21 @@ class ParticipantsFragment : Fragment() {
             val uids = shoppingList.participants.keys.toList()
             val ownerId = shoppingList.ownerId
 
-            adapter.currentOwnerId = ownerId // ✅ לעדכן תמיד את ה-owner
-            adapter.notifyDataSetChanged()   // ✅ לרענן את האדפטר
+            adapter.currentOwnerId = ownerId
+            adapter.notifyDataSetChanged()
 
-            viewModel.fetchUsersFromFirebase(uids) { users ->
-                adapter.submitList(users) // ✅ נטען רק את המשתמשים שעדיין קיימים
+            // קודם מנסים להביא מה-ROOM
+            viewModel.getParticipantsOnce(uids) { localUsers ->
+                if (localUsers.isNotEmpty()) {
+                    adapter.submitList(localUsers)
+                } else {
+                    // אם אין ברום - מביאים מפיירבייס
+                    viewModel.fetchUsersFromFirebase(uids) { remoteUsers ->
+                        adapter.submitList(remoteUsers)
+                    }
+                }
             }
         }
     }
-
-
 
 }

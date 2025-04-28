@@ -41,8 +41,8 @@ class SignUpFragment : Fragment() {
         val signUpButton = view.findViewById<Button>(R.id.btnSignUp)
         val loginTextView = view.findViewById<TextView>(R.id.tvLogin)
 
-        // טקסט מעבר לדף התחברות
-        val spannable = SpannableString("Already have an account? Login")
+        // טקסט מעבר לדף התחברות בעברית
+        val spannable = SpannableString("כבר יש לך חשבון? התחבר")
         val clickableSpan = object : ClickableSpan() {
             override fun onClick(widget: View) {
                 findNavController().navigate(R.id.action_signUpFragment_to_loginFragment)
@@ -54,7 +54,8 @@ class SignUpFragment : Fragment() {
                 ds.isUnderlineText = false
             }
         }
-        spannable.setSpan(clickableSpan, 25, spannable.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        // המילה "התחבר" מתחילה אחרי "כבר יש לך חשבון? " שזה 18 תווים
+        spannable.setSpan(clickableSpan, 18, spannable.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         loginTextView.text = spannable
         loginTextView.movementMethod = LinkMovementMethod.getInstance()
 
@@ -66,14 +67,14 @@ class SignUpFragment : Fragment() {
 
             if (username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
                 if (password != confirmPassword) {
-                    showAlert("Password Mismatch", "Passwords do not match. Please try again.")
+                    showAlert("סיסמאות לא תואמות", "הסיסמאות אינן זהות. נסה שוב.")
                 } else if (isInternetAvailable()) {
                     viewModel.register(username, email, password)
                 } else {
-                    showAlert("No Internet", "No internet connection. Try again later.")
+                    showAlert("אין חיבור אינטרנט", "אין חיבור לאינטרנט. נסה שוב מאוחר יותר.")
                 }
             } else {
-                showAlert("Missing Fields", "Please enter all fields.")
+                showAlert("שדות חסרים", "אנא מלא את כל השדות.")
             }
         }
 
@@ -85,14 +86,14 @@ class SignUpFragment : Fragment() {
     private fun observeViewModel() {
         viewModel.signUpSuccess.observe(viewLifecycleOwner) { success ->
             if (success) {
-                Toast.makeText(requireContext(), "User registered successfully", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "נרשמת בהצלחה", Toast.LENGTH_SHORT).show()
                 findNavController().navigate(R.id.action_signUpFragment_to_shoppingListFragment)
             }
         }
 
         viewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
             errorMessage?.let {
-                showAlert("Registration Failed", it)
+                showAlert("ההרשמה נכשלה", it)
             }
         }
     }
@@ -101,7 +102,7 @@ class SignUpFragment : Fragment() {
         AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setMessage(message)
-            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .setPositiveButton("אישור") { dialog, _ -> dialog.dismiss() }
             .show()
     }
 

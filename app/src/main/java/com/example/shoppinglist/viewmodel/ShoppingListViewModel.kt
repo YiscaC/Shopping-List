@@ -3,6 +3,7 @@ package com.example.shoppinglist.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.shoppinglist.data.local.models.ShoppingListEntity
 import com.example.shoppinglist.data.repository.ShoppingListRepository
@@ -12,40 +13,33 @@ class ShoppingListViewModel(application: Application) : AndroidViewModel(applica
 
     private val repository = ShoppingListRepository(application)
 
-    // רשימת הקניות של המשתמש (מתעדכנת אוטומטית מה-ROOM)
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
     val shoppingLists: LiveData<List<ShoppingListEntity>> = repository.getUserShoppingLists()
 
-    // יצירת רשימה חדשה
+    fun refreshShoppingLists() {
+        viewModelScope.launch {
+            _isLoading.postValue(true)
+            repository.refreshShoppingLists()
+            _isLoading.postValue(false)
+        }
+    }
+
     fun createShoppingList(name: String) {
         viewModelScope.launch {
             repository.createShoppingList(name)
-            // אין צורך לקרוא ל-refresh, כי LiveData מתעדכן לבד מ-ROOM
         }
     }
 
-    // מחיקת רשימה
-    fun deleteShoppingList(listId: String) {
+    fun addParticipantToList(listId: String, participantUid: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            repository.deleteShoppingList(listId)
-            // אין צורך לקרוא ל-refresh, כי LiveData מתעדכן לבד מ-ROOM
+            val success = repository.addParticipant(listId, participantUid)
+            onResult(success)
         }
     }
 
-    // הוספת משתתף לרשימה קיימת
-    fun addParticipantToList(listId: String, participantEmail: String, callback: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            val success = repository.addParticipant(listId, participantEmail)
-            // אין צורך לקרוא ל-refresh, כי אנו מעדכנים את ROOM ישירות
-            callback(success)
-        }
-    }
-
-    // רענון רשימות מהפיירבייס (לפי דרישה)
-    fun refreshShoppingLists() {
-        viewModelScope.launch {
-            repository.refreshShoppingLists()
-        }
+    suspend fun getShoppingListById(listId: String): ShoppingListEntity? {
+        return repository.getShoppingListById(listId)
     }
 }
-
-

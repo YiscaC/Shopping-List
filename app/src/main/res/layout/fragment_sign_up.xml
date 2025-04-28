@@ -7,7 +7,8 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="24dp"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:layoutDirection="rtl">
 
     <!-- שדה שם משתמש עם אייקון -->
     <com.google.android.material.textfield.TextInputLayout
@@ -20,9 +21,10 @@
             android:id="@+id/etUsername"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Username"
+            android:hint="שם משתמש"
             android:inputType="textPersonName"
-            android:textSize="16sp"/>
+            android:textSize="16sp"
+            android:textAlignment="viewStart" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- שדה אימייל עם אייקון -->
@@ -37,9 +39,10 @@
             android:id="@+id/etEmailSignUp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
+            android:hint="אימייל"
             android:inputType="textEmailAddress"
-            android:textSize="16sp"/>
+            android:textSize="16sp"
+            android:textAlignment="viewStart" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- שדה סיסמה עם אייקון -->
@@ -55,9 +58,10 @@
             android:id="@+id/etPasswordSignUp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
+            android:hint="סיסמה"
             android:inputType="textPassword"
-            android:textSize="16sp"/>
+            android:textSize="16sp"
+            android:textAlignment="viewStart" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- שדה אישור סיסמה עם אייקון -->
@@ -73,9 +77,10 @@
             android:id="@+id/etConfirmPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Confirm Password"
+            android:hint="אשר סיסמה"
             android:inputType="textPassword"
-            android:textSize="16sp"/>
+            android:textSize="16sp"
+            android:textAlignment="viewStart" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- כפתור הרשמה -->
@@ -85,17 +90,18 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:backgroundTint="@color/green"
-        android:text="Sign Up"
+        android:text="הרשם"
         android:textColor="@color/white"
-        android:textSize="16sp"/>
+        android:textSize="16sp" />
 
     <!-- טקסט מעבר לכניסה -->
     <TextView
         android:id="@+id/tvLogin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Already have an account? Login"
+        android:text="כבר יש לך חשבון? התחבר"
         android:textColor="@color/black"
         android:textSize="14sp"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginTop="12dp"
+        android:textAlignment="viewStart" />
 </LinearLayout>
