@@ -32,9 +32,9 @@ class ShoppingListViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun addParticipantToList(listId: String, participantUid: String, onResult: (Boolean) -> Unit) {
+    fun addParticipantToList(listId: String, participantEmail: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val success = repository.addParticipant(listId, participantUid)
+            val success = repository.addParticipant(listId, participantEmail)
             onResult(success)
         }
     }

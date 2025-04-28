@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -56,13 +57,33 @@ class ShoppingListAdapter(
 
         // הצגת תמונות משתתפים לפי UID
         shoppingList.participants.keys.forEach { participantUid ->
+            val density = holder.itemView.context.resources.displayMetrics.density
+
             val imageView = ShapeableImageView(holder.itemView.context).apply {
-                layoutParams = LinearLayout.LayoutParams(100, 100).apply {
-                    setMargins(8, 8, 8, 8)
+                val sizeInDp = 56  // 📏 גודל נורמלי של תמונת פרופיל (56dp כמו בסטנדרט Material Design)
+                val marginInDp = 6 // 📏 רווח יותר עדין
+
+                layoutParams = LinearLayout.LayoutParams(
+                    (sizeInDp * density).toInt(),
+                    (sizeInDp * density).toInt()
+                ).apply {
+                    setMargins(
+                        (marginInDp * density).toInt(),
+                        (marginInDp * density).toInt(),
+                        (marginInDp * density).toInt(),
+                        (marginInDp * density).toInt()
+                    )
                 }
-                // ברירת מחדל לתמונה דיפולטית
+
+                shapeAppearanceModel = shapeAppearanceModel
+                    .toBuilder()
+                    .setAllCornerSizes(28f) // 📏 28f נותן עיגול מוחלט לתמונה ברוחב 56
+                    .build()
+
                 setImageResource(R.drawable.default_profile)
+                scaleType = ImageView.ScaleType.CENTER_CROP
             }
+
 
             // אם יש תמונה למשתמש – נטען אותה
             val imageUrl = participantImages[participantUid]

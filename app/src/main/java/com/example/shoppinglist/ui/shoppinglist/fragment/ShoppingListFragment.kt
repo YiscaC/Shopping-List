@@ -139,23 +139,31 @@ class ShoppingListFragment : Fragment() {
             .setView(input)
             .setPositiveButton("הוסף") { _, _ ->
                 val participantEmail = input.text.toString().trim()
-                if (participantEmail.isNotEmpty()) {
-                    viewModel.addParticipantToList(listId, participantEmail) { success ->
-                        requireActivity().runOnUiThread {
-                            if (success) {
-                                Toast.makeText(requireContext(), "✅ משתתף נוסף בהצלחה", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(requireContext(), "❌ לא נמצא משתמש עם כתובת המייל הזו", Toast.LENGTH_SHORT).show()
-                            }
+
+                if (participantEmail.isEmpty()) {
+                    Toast.makeText(requireContext(), "⚠ כתובת מייל לא יכולה להיות ריקה", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                if (!hasInternetConnection()) {
+                    Toast.makeText(requireContext(), "⚠ אין חיבור אינטרנט. לא ניתן להוסיף משתתף", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                viewModel.addParticipantToList(listId, participantEmail) { success ->
+                    requireActivity().runOnUiThread {
+                        if (success) {
+                            Toast.makeText(requireContext(), "✅ משתתף נוסף בהצלחה", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(requireContext(), "❌ לא נמצא משתמש עם כתובת המייל הזו", Toast.LENGTH_SHORT).show()
                         }
                     }
-                } else {
-                    Toast.makeText(requireContext(), "⚠ כתובת מייל לא יכולה להיות ריקה", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("ביטול", null)
             .show()
     }
+
 
     private fun fetchParticipantImages(uids: Set<String>, callback: (Map<String, String>) -> Unit) {
         val imagesMap = mutableMapOf<String, String>()
