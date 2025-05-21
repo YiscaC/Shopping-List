@@ -37,11 +37,7 @@
                 android:text="שם המוצר"
                 android:paddingStart="8dp"/>
 
-            <ImageView
-                android:id="@+id/productImageView"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:layout_marginTop="16dp"/>
+
         </LinearLayout>
 
         <!-- אזור שינוי כמות -->

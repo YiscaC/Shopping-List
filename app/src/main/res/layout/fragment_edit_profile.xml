@@ -65,6 +65,7 @@
                 android:enabled="false"
                 android:textColor="@android:color/black"
                 android:drawableEnd="@drawable/ic_email"
+                android:textDirection="rtl"
                 android:drawablePadding="8dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -80,7 +81,7 @@
                 android:layout_height="wrap_content"
                 android:hint="שם משתמש"
                 android:textColor="@android:color/black"
-                android:drawableStart="@drawable/ic_user"
+                android:drawableEnd="@drawable/ic_user"
                 android:drawablePadding="8dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -96,7 +97,7 @@
                 android:layout_height="wrap_content"
                 android:hint="שם מלא"
                 android:textColor="@android:color/black"
-                android:drawableStart="@drawable/ic_edit"
+                android:drawableEnd="@drawable/ic_user"
                 android:drawablePadding="8dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -114,7 +115,11 @@
                 android:inputType="phone"
                 android:textColor="@android:color/black"
                 android:drawableStart="@drawable/ic_phone"
-                android:drawablePadding="8dp" />
+                android:drawablePadding="8dp"
+                android:layoutDirection="rtl"
+                android:textAlignment="viewStart"
+                android:gravity="start" />
+
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- סיסמה חדשה -->
@@ -130,8 +135,10 @@
                 android:hint="סיסמה חדשה"
                 android:inputType="textPassword"
                 android:textColor="@android:color/black"
-                android:drawableStart="@drawable/ic_password"
+                android:drawableEnd="@drawable/ic_password"
+                android:textDirection="rtl"
                 android:drawablePadding="8dp" />
+
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- כפתור שמירת שינויים -->

@@ -55,7 +55,7 @@ class SignUpFragment : Fragment() {
             }
         }
         // המילה "התחבר" מתחילה אחרי "כבר יש לך חשבון? " שזה 18 תווים
-        spannable.setSpan(clickableSpan, 18, spannable.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        spannable.setSpan(clickableSpan, 17, spannable.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         loginTextView.text = spannable
         loginTextView.movementMethod = LinkMovementMethod.getInstance()
 

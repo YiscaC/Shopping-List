@@ -78,19 +78,19 @@ class ShoppingItemsAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = items[position]
-        if (item is ShoppingListItem.ShoppingProduct) {
-            holder.itemView.findViewById<TextView>(R.id.itemName).text = item.item.name
-
-            val productImageView = holder.itemView.findViewById<ImageView>(R.id.productImageView)
-            if (!item.item.imageUrl.isNullOrEmpty()) {
-                Glide.with(holder.itemView)
-                    .load(item.item.imageUrl)
-                    .into(productImageView)
-            } else {
-                productImageView.setImageResource(R.drawable.image_placeholder)
+        when (holder) {
+            is CategoryHeaderViewHolder -> {
+                val categoryItem = item as ShoppingListItem.CategoryHeader
+                holder.categoryName.text = categoryItem.categoryName
+            }
+            is ShoppingProductViewHolder -> {
+                val productItem = item as ShoppingListItem.ShoppingProduct
+                bindProduct(holder, productItem.item)
             }
         }
     }
+
+
 
     private fun bindProduct(holder: ShoppingProductViewHolder, item: ShoppingItem) {
         holder.name.text = if (!item.expanded) {
@@ -147,8 +147,13 @@ class ShoppingItemsAdapter(
                 return@setOnClickListener
             }
 
-            // שולחים פעם אחת בלבד
-            onCommentAdded(item, commentText)
+            // שליחה של טקסט בלבד
+            if (hasText) {
+                onCommentAdded(item, commentText)
+            } else {
+                // שליחה של תמונה בלבד
+                onCommentAdded(item, "")
+            }
 
             // ניקוי אחרי שליחה
             item.previewImageBitmap = null
@@ -159,6 +164,7 @@ class ShoppingItemsAdapter(
             holder.messagesAdapter?.notifyDataSetChanged()
             notifyItemChanged(holder.adapterPosition)
         }
+
 
         holder.addImageButton.setOnClickListener {
             if (isNetworkAvailable(holder.itemView.context)) {

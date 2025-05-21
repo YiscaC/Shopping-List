@@ -264,18 +264,23 @@ class ShoppingItemsFragment : Fragment() {
     private fun sendPendingImageIfNeeded() {
         val itemId = currentItemId ?: return
 
-        pendingImageUri?.let {
-            viewModel.uploadMessageImageFromUri(itemId, it)
+        // אם יש תמונה מהגלריה – נעלה רק אותה
+        if (pendingImageUri != null) {
+            viewModel.uploadMessageImageFromUri(itemId, pendingImageUri!!)
             pendingImageUri = null
+            pendingImageBitmap = null // נוודא שלא תעלה פעמיים
+            return
         }
 
-        pendingImageBitmap?.let {
+        // אחרת נעלה את ה-Bitmap מהמצלמה
+        if (pendingImageBitmap != null) {
             val baos = ByteArrayOutputStream()
-            it.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+            pendingImageBitmap!!.compress(Bitmap.CompressFormat.JPEG, 100, baos)
             viewModel.uploadMessageImageFromBytes(itemId, baos.toByteArray())
             pendingImageBitmap = null
         }
     }
+
 
     private fun rotateBitmapIfRequired(bitmap: Bitmap, uri: Uri? = null): Bitmap {
         return bitmap
